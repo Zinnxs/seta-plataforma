@@ -153,7 +153,7 @@ function AdminOverview({ institution, disciplines, professors, students, allStat
 
                 <div className="flex items-center gap-4">
                   <div className="text-right text-xs">
-                    <span className="text-stone-400 block">Média da Turma</span>
+                    <span className="text-stone-400 block">Pontuação Média</span>
                     <span className="text-sm font-bold tabular-nums text-stone-900 dark:text-stone-50">{fmtGrade(stats.average)}</span>
                   </div>
 
@@ -261,7 +261,7 @@ function AdminRecoveryView({ disciplines, grades, students, professors }) {
     <>
       <PageHeader
         title="Acompanhamento de Recuperação"
-        subtitle="Alunos com média inferior à nota de corte do SETA que necessitam de avaliação de recuperação ou aconselhamento."
+        subtitle="Alunos com pontuação somada inferior a 7,0 pontos que necessitam de avaliação de recuperação ou acompanhamento pastoral."
       />
 
       {recoveryList.length === 0 ? (
@@ -269,7 +269,7 @@ function AdminRecoveryView({ disciplines, grades, students, professors }) {
           <div className="p-8 text-center space-y-2">
             <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
             <h4 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Nenhum aluno em recuperação</h4>
-            <p className="text-xs text-stone-400">Todos os alunos matriculados atingiram a média mínima.</p>
+            <p className="text-xs text-stone-400">Todos os alunos matriculados atingiram a soma mínima de 7,0 pontos.</p>
           </div>
         </Card>
       ) : (
@@ -288,7 +288,7 @@ function AdminRecoveryView({ disciplines, grades, students, professors }) {
 
               <div className="flex items-center gap-4">
                 <div className="text-right text-xs">
-                  <span className="text-stone-400 block">Média Atual</span>
+                  <span className="text-stone-400 block">Nota Somada</span>
                   <span className="text-sm font-bold tabular-nums text-stone-900 dark:text-stone-50">{fmtGrade(res.final)}</span>
                 </div>
 

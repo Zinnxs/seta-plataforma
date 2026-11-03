@@ -49,11 +49,11 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
                   <p className="mt-0.5 font-medium tabular-nums">{st.count}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-stone-400 dark:text-stone-500">Média da turma</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">Pontuação média</p>
                   <p className="mt-0.5 font-medium tabular-nums">{fmtGrade(st.average)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-stone-400 dark:text-stone-500">Recuperação</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">Recuperação (soma &lt; 7)</p>
                   <p className={`mt-0.5 font-medium tabular-nums ${st.recovery ? 'text-amber-600 dark:text-amber-400' : ''}`}>
                     {st.recovery}
                   </p>
@@ -67,7 +67,7 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
                     className="rounded-md bg-stone-100 px-2 py-0.5 text-[11px] text-stone-600 dark:bg-stone-800 dark:text-stone-300"
                     title={typeLabel(e.type)}
                   >
-                    {e.name} · {e.weight}%
+                    {e.name} · {Number(e.maxPoints).toFixed(1).replace('.', ',')} pts
                   </span>
                 ))}
               </div>

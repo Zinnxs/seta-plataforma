@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { Info } from 'lucide-react';
+import { Info, HelpCircle } from 'lucide-react';
 import { useStore } from '../lib/store';
-import { computeResult, describeFormula, isNum } from '../lib/grades';
+import { computeResult, describeFormula, isNum, pointsTotal } from '../lib/grades';
 import { fmtGrade } from '../lib/format';
 import { RECOVERY_RULES, typeLabel } from '../data/seed';
 import { GradeInput } from './GradeInput';
 import { Avatar, Callout, Card, StatusBadge, Tabs } from './ui';
 
 /**
- * Tabela de notas com colunas dinâmicas conforme os critérios da disciplina.
- * readOnly: visualização (ex.: direção). Diário fechado também bloqueia a edição.
+ * Tabela de notas no modelo de PONTOS SOMADOS:
+ * As notas lançadas em cada atividade são somadas diretamente.
+ * Para ser aprovado, o aluno precisa atingir a nota somada mínima de 7,0 pontos.
  */
 export function GradesTable({ discipline, readOnly = false, actions }) {
   const { data, setScore, setRecovery, setAbsences } = useStore();
@@ -28,6 +29,7 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
   const visible = filter === 'recuperacao' ? recoveryRows : rows;
   const disabled = readOnly || discipline.gradesClosed;
   const rule = RECOVERY_RULES.find((r) => r.id === discipline.recoveryRule);
+  const totalDiscPoints = pointsTotal(discipline.evaluations);
 
   return (
     <div className="space-y-4">
@@ -36,8 +38,8 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
           value={filter}
           onChange={setFilter}
           tabs={[
-            { id: 'todos', label: 'Todos', count: rows.length },
-            { id: 'recuperacao', label: 'Recuperação', count: recoveryRows.length },
+            { id: 'todos', label: 'Todos os alunos', count: rows.length },
+            { id: 'recuperacao', label: 'Em recuperação (soma < 7,0)', count: recoveryRows.length },
           ]}
         />
         {actions}
@@ -45,8 +47,8 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
 
       {filter === 'recuperacao' && (
         <Callout icon={Info} tone="amber">
-          <strong className="font-medium">{rule?.label}.</strong> {rule?.description} Média mínima:{' '}
-          {fmtGrade(discipline.passingGrade)}.
+          <strong className="font-medium">Regra de Recuperação ({rule?.label}):</strong> {rule?.description}
+          <span className="block mt-0.5">Nota somada mínima exigida para aprovação: <strong>{fmtGrade(discipline.passingGrade)} pontos</strong>.</span>
         </Callout>
       )}
 
@@ -60,13 +62,13 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
                   <th key={e.id} className="px-2 py-3 text-center font-medium">
                     <div className="text-stone-700 dark:text-stone-200">{e.name}</div>
                     <div className="mt-0.5 text-[11px] font-normal text-stone-400 dark:text-stone-500">
-                      {typeLabel(e.type)} · {e.weight}%
+                      {typeLabel(e.type)} · até {Number(e.maxPoints).toFixed(1).replace('.', ',')} pts
                     </div>
                   </th>
                 ))}
                 <th className="px-2 py-3 text-center font-medium">
                   <div className="text-stone-700 dark:text-stone-200">Recuperação</div>
-                  <div className="mt-0.5 text-[11px] font-normal text-stone-400 dark:text-stone-500">se necessário</div>
+                  <div className="mt-0.5 text-[11px] font-normal text-stone-400 dark:text-stone-500">se soma &lt; 7,0</div>
                 </th>
                 <th className="px-2 py-3 text-center font-medium">
                   <div className="text-stone-700 dark:text-stone-200">Faltas</div>
@@ -74,7 +76,10 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
                     máx. {discipline.maxAbsences}
                   </div>
                 </th>
-                <th className="px-3 py-3 text-center font-medium text-stone-700 dark:text-stone-200">Média</th>
+                <th className="px-3 py-3 text-center font-medium text-stone-700 dark:text-stone-200">
+                  <div>Nota Somada</div>
+                  <div className="mt-0.5 text-[11px] font-normal text-stone-400 dark:text-stone-500">min. 7,0 / 10,0</div>
+                </th>
                 <th className="px-5 py-3 text-left font-medium text-stone-700 dark:text-stone-200">Situação</th>
               </tr>
             </thead>
@@ -101,6 +106,7 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
                           label={`${e.name} — ${st.name}`}
                           value={rec.scores[e.id] ?? null}
                           disabled={disabled}
+                          max={Number(e.maxPoints) || 10}
                           onCommit={(v) => setScore(discipline.id, st.id, e.id, v)}
                         />
                       </td>
@@ -111,6 +117,7 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
                           label={`Recuperação — ${st.name}`}
                           value={rec.recovery ?? null}
                           disabled={disabled}
+                          max={10.0}
                           highlight
                           onCommit={(v) => setRecovery(discipline.id, st.id, v)}
                         />
@@ -129,10 +136,17 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
                       />
                     </td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="font-semibold tabular-nums text-stone-900 dark:text-stone-50">{fmtGrade(res.final)}</span>
+                      <span className={`font-bold tabular-nums ${
+                        res.final >= 7.0 
+                          ? 'text-stone-900 dark:text-stone-50' 
+                          : 'text-amber-600 dark:text-amber-400'
+                      }`}>
+                        {fmtGrade(res.final)}
+                        <span className="text-[11px] font-normal text-stone-400"> / {totalDiscPoints.toFixed(1).replace('.', ',')}</span>
+                      </span>
                       {res.recoveryApplied && (
                         <span className="block text-[11px] tabular-nums text-stone-400 line-through">
-                          {fmtGrade(res.average)}
+                          anterior: {fmtGrade(res.sum)}
                         </span>
                       )}
                     </td>
@@ -154,10 +168,14 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
         </div>
       </Card>
 
-      <p className="text-xs text-stone-400 dark:text-stone-500">
-        {disabled ? 'Somente visualização.' : 'As notas são salvas automaticamente ao sair do campo.'} Média ={' '}
-        {describeFormula(discipline.evaluations)}.
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-stone-400 dark:text-stone-500 gap-2">
+        <p>
+          {disabled ? 'Somente visualização.' : 'As notas são somadas automaticamente ao sair do campo.'}
+        </p>
+        <p className="font-medium text-stone-600 dark:text-stone-400">
+          Critério de aprovação: Nota somada &ge; {fmtGrade(discipline.passingGrade)} pontos.
+        </p>
+      </div>
     </div>
   );
 }

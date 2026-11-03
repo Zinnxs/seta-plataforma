@@ -1,6 +1,9 @@
 /**
- * Dados fictícios de demonstração do SETA.
- * Em produção, estes dados virão do banco de dados (ex.: Supabase/PostgreSQL).
+ * Dados fictícios de demonstração do SETA (Seminário Teológico Aliança).
+ * MODELO POR PONTOS ACUMULADOS (SOMA DE NOTAS):
+ * Não é média! O professor distribui os 10,0 pontos da matéria entre provas,
+ * trabalhos, seminários, participação, presença, etc.
+ * O aluno é aprovado se a SOMA das notas atingir pelo menos 7,0 pontos.
  */
 
 export const EVALUATION_TYPES = [
@@ -9,8 +12,9 @@ export const EVALUATION_TYPES = [
   { id: 'seminario', label: 'Seminário' },
   { id: 'fichamento', label: 'Fichamento' },
   { id: 'resenha', label: 'Resenha' },
-  { id: 'estudo_caso', label: 'Estudo de caso' },
   { id: 'participacao', label: 'Participação' },
+  { id: 'presenca', label: 'Presença / Pontualidade' },
+  { id: 'estudo_caso', label: 'Estudo de caso' },
   { id: 'outro', label: 'Outro' },
 ];
 
@@ -19,18 +23,18 @@ export const typeLabel = (id) => EVALUATION_TYPES.find((t) => t.id === id)?.labe
 export const RECOVERY_RULES = [
   {
     id: 'substitui_menor',
-    label: 'Substitui a menor nota',
-    description: 'A nota da recuperação entra no lugar da menor nota parcial (se for maior) e a média é recalculada.',
+    label: 'Substitui a menor nota na soma',
+    description: 'A nota da recuperação substitui a menor pontuação obtida pelo aluno e o total somado é recalculado.',
   },
   {
-    id: 'media_simples',
-    label: 'Média com a recuperação',
-    description: 'Média final = (média do período + nota da recuperação) ÷ 2.',
+    id: 'prova_substitutiva',
+    label: 'Prova de recuperação (vale até 10,0)',
+    description: 'A recuperação substitui a soma inteira; atingindo 7,0 ou mais, o aluno é considerado aprovado na recuperação.',
   },
   {
-    id: 'nota_minima',
-    label: 'Aprovação com a média mínima',
-    description: 'Se a recuperação atingir a média mínima, o aluno é aprovado e sua média final passa a ser a média mínima.',
+    id: 'soma_complementar',
+    label: 'Soma complementar (limite até 7,0)',
+    description: 'Os pontos da recuperação são somados ao total obtido, limitando o resultado final ao corte de aprovação (7,0).',
   },
 ];
 
@@ -67,14 +71,15 @@ export function createSeed() {
       course: 'Bacharel em Teologia',
       workload: 60,
       schedule: 'Segundas, 19h30',
-      passingGrade: 7,
+      passingGrade: 7.0, // Nota somada mínima = 7,0 pontos
       maxAbsences: 15,
       recoveryRule: 'substitui_menor',
       gradesClosed: false,
+      // Pontos distribuídos somam 10,0 pontos
       evaluations: [
-        { id: 'd1-p1', name: 'Prova 1', type: 'prova', weight: 30 },
-        { id: 'd1-t1', name: 'Trabalho exegético (Rm 8)', type: 'trabalho', weight: 30 },
-        { id: 'd1-p2', name: 'Prova final', type: 'prova', weight: 40 },
+        { id: 'd1-p1', name: 'Prova 1', type: 'prova', maxPoints: 3.0 },
+        { id: 'd1-t1', name: 'Trabalho exegético (Rm 8)', type: 'trabalho', maxPoints: 3.0 },
+        { id: 'd1-p2', name: 'Prova final', type: 'prova', maxPoints: 4.0 },
       ],
     },
     {
@@ -85,13 +90,14 @@ export function createSeed() {
       course: 'Bacharel em Teologia',
       workload: 45,
       schedule: 'Quartas, 19h30',
-      passingGrade: 7,
+      passingGrade: 7.0,
       maxAbsences: 11,
-      recoveryRule: 'media_simples',
+      recoveryRule: 'soma_complementar',
       gradesClosed: false,
       evaluations: [
-        { id: 'd5-s1', name: 'Seminário em grupo', type: 'seminario', weight: 40 },
-        { id: 'd5-p1', name: 'Prova dissertativa', type: 'prova', weight: 60 },
+        { id: 'd5-s1', name: 'Seminário em grupo', type: 'seminario', maxPoints: 4.0 },
+        { id: 'd5-p1', name: 'Prova dissertativa', type: 'prova', maxPoints: 5.0 },
+        { id: 'd5-pa', name: 'Participação em sala', type: 'participacao', maxPoints: 1.0 },
       ],
     },
     {
@@ -102,14 +108,14 @@ export function createSeed() {
       course: 'Bacharel em Teologia',
       workload: 60,
       schedule: 'Terças, 19h30',
-      passingGrade: 7,
+      passingGrade: 7.0,
       maxAbsences: 15,
-      recoveryRule: 'media_simples',
+      recoveryRule: 'substitui_menor',
       gradesClosed: false,
       evaluations: [
-        { id: 'd2-t1', name: 'Exegese de perícope', type: 'trabalho', weight: 40 },
-        { id: 'd2-s1', name: 'Seminário', type: 'seminario', weight: 30 },
-        { id: 'd2-pa', name: 'Participação', type: 'participacao', weight: 30 },
+        { id: 'd2-t1', name: 'Exegese de perícope', type: 'trabalho', maxPoints: 4.0 },
+        { id: 'd2-s1', name: 'Seminário bíblico', type: 'seminario', maxPoints: 3.0 },
+        { id: 'd2-pa', name: 'Participação e presença', type: 'presenca', maxPoints: 3.0 },
       ],
     },
     {
@@ -120,14 +126,14 @@ export function createSeed() {
       course: 'Bacharel em Teologia',
       workload: 45,
       schedule: 'Quintas, 19h30',
-      passingGrade: 7,
+      passingGrade: 7.0,
       maxAbsences: 11,
-      recoveryRule: 'nota_minima',
+      recoveryRule: 'prova_substitutiva',
       gradesClosed: false,
       evaluations: [
-        { id: 'd3-p1', name: 'Prova', type: 'prova', weight: 50 },
-        { id: 'd3-f1', name: 'Fichamento', type: 'fichamento', weight: 25 },
-        { id: 'd3-r1', name: 'Resenha — As Institutas', type: 'resenha', weight: 25 },
+        { id: 'd3-p1', name: 'Prova teórica', type: 'prova', maxPoints: 5.0 },
+        { id: 'd3-f1', name: 'Fichamento histórico', type: 'fichamento', maxPoints: 2.5 },
+        { id: 'd3-r1', name: 'Resenha — As Institutas', type: 'resenha', maxPoints: 2.5 },
       ],
     },
     {
@@ -138,59 +144,62 @@ export function createSeed() {
       course: 'Bacharel em Teologia',
       workload: 45,
       schedule: 'Sextas, 19h30',
-      passingGrade: 7,
+      passingGrade: 7.0,
       maxAbsences: 11,
       recoveryRule: 'substitui_menor',
       gradesClosed: true,
       evaluations: [
-        { id: 'd4-c1', name: 'Estudo de caso', type: 'estudo_caso', weight: 50 },
-        { id: 'd4-t1', name: 'Relatório de estágio', type: 'trabalho', weight: 50 },
+        { id: 'd4-c1', name: 'Estudo de caso clínico/pastoral', type: 'estudo_caso', maxPoints: 5.0 },
+        { id: 'd4-t1', name: 'Relatório de estágio ministerial', type: 'trabalho', maxPoints: 4.0 },
+        { id: 'd4-pr', name: 'Pontualidade e presença', type: 'presenca', maxPoints: 1.0 },
       ],
     },
   ];
 
   const ev = (id) => disciplines.find((d) => d.id === id).evaluations;
 
+  // Pontuações somadas nos exemplos:
+  // TEO-101: P1 (max 3.0), Trab (max 3.0), P2 (max 4.0) -> Soma = 10.0 pts possíveis
   const grades = {
     'disc-1': buildGrades(ev('disc-1'), {
-      'stu-1': { s: [8.5, 8, 7.5], abs: 2 },
-      'stu-2': { s: [6, 6.5, 6], rec: 8.5, abs: 4 },
-      'stu-3': { s: [9.5, 9, 9], abs: 0 },
-      'stu-4': { s: [4.5, 5, 4], abs: 6 },
-      'stu-5': { s: [7, 7.5, 8], abs: 1 },
-      'stu-6': { s: [8, 9, 8.5], abs: 3 },
+      'stu-1': { s: [2.6, 2.4, 3.2], abs: 2 }, // Soma: 8.2 (Aprovado)
+      'stu-2': { s: [1.8, 1.8, 2.0], rec: 3.5, abs: 4 }, // Soma: 5.6 (< 7) -> Recup: 3.5 (subst. 1.8) -> Nova soma: 7.3 (Aprovado na Recup)
+      'stu-3': { s: [2.9, 2.8, 3.8], abs: 0 }, // Soma: 9.5 (Distinção)
+      'stu-4': { s: [1.2, 1.5, 1.6], abs: 6 }, // Soma: 4.3 (< 7) -> Em Recuperação
+      'stu-5': { s: [2.2, 2.3, 3.1], abs: 1 }, // Soma: 7.6 (Aprovado)
+      'stu-6': { s: [2.5, 2.7, 3.4], abs: 3 }, // Soma: 8.6 (Aprovado)
     }),
     'disc-5': buildGrades(ev('disc-5'), {
-      'stu-1': { s: [null, 7.5], abs: 1 },
-      'stu-2': { s: [7, 6.5], abs: 2 },
-      'stu-3': { s: [null, 9.5], abs: 0 },
-      'stu-4': { s: [6, 5.5], abs: 5 },
-      'stu-5': { s: [null, 8], abs: 1 },
-      'stu-6': { s: [7.5, 8], abs: 2 },
+      'stu-1': { s: [null, 3.8, 0.9], abs: 1 }, // Faltando seminário (parcial: 4.7)
+      'stu-2': { s: [2.8, 3.2, 0.8], abs: 2 }, // Soma: 6.8 (< 7) -> Em Recuperação
+      'stu-3': { s: [3.8, 4.8, 1.0], abs: 0 }, // Soma: 9.6 (Distinção)
+      'stu-4': { s: [2.5, 2.8, 0.7], abs: 5 }, // Soma: 6.0 (< 7) -> Em Recuperação
+      'stu-5': { s: [3.2, 4.0, 0.9], abs: 1 }, // Soma: 8.1 (Aprovado)
+      'stu-6': { s: [3.0, 4.2, 1.0], abs: 2 }, // Soma: 8.2 (Aprovado)
     }),
     'disc-2': buildGrades(ev('disc-2'), {
-      'stu-1': { s: [9, 8.5, 9], abs: 1 },
-      'stu-2': { s: [7, 7, 8], abs: 3 },
-      'stu-3': { s: [9.5, 9, 10], abs: 0 },
-      'stu-4': { s: [6, 6.5, 7], abs: 7 },
-      'stu-5': { s: [8, 7.5, 8], abs: 2 },
-      'stu-6': { s: [8.5, 8, 9], abs: 1 },
+      'stu-1': { s: [3.6, 2.6, 2.8], abs: 1 }, // Soma: 9.0 (Distinção)
+      'stu-2': { s: [2.8, 2.2, 2.5], abs: 3 }, // Soma: 7.5 (Aprovado)
+      'stu-3': { s: [3.9, 2.9, 3.0], abs: 0 }, // Soma: 9.8 (Distinção)
+      'stu-4': { s: [2.2, 1.8, 2.0], abs: 7 }, // Soma: 6.0 (< 7) -> Em Recuperação
+      'stu-5': { s: [3.2, 2.4, 2.7], abs: 2 }, // Soma: 8.3 (Aprovado)
+      'stu-6': { s: [3.4, 2.5, 2.8], abs: 1 }, // Soma: 8.7 (Aprovado)
     }),
     'disc-3': buildGrades(ev('disc-3'), {
-      'stu-1': { s: [8, 8.5, null], abs: 2 },
-      'stu-2': { s: [7, 8, null], abs: 1 },
-      'stu-3': { s: [9, 9, null], abs: 0 },
-      'stu-4': { s: [5.5, 7, null], abs: 4 },
-      'stu-5': { s: [7.5, 8, null], abs: 2 },
-      'stu-6': { s: [8, 7.5, null], abs: 3 },
+      'stu-1': { s: [4.0, 2.2, null], abs: 2 }, // Parcial 6.2 (falta resenha)
+      'stu-2': { s: [3.5, 2.0, null], abs: 1 }, // Parcial 5.5
+      'stu-3': { s: [4.8, 2.5, null], abs: 0 }, // Parcial 7.3
+      'stu-4': { s: [2.8, 1.8, null], abs: 4 }, // Parcial 4.6
+      'stu-5': { s: [3.8, 2.2, null], abs: 2 }, // Parcial 6.0
+      'stu-6': { s: [4.0, 2.0, null], abs: 3 }, // Parcial 6.0
     }),
     'disc-4': buildGrades(ev('disc-4'), {
-      'stu-1': { s: [7.5, 8.5], abs: 2 },
-      'stu-2': { s: [7, 7.5], abs: 2 },
-      'stu-3': { s: [9, 9.5], abs: 0 },
-      'stu-4': { s: [6.5, 7.5], abs: 5 },
-      'stu-5': { s: [8, 8], abs: 1 },
-      'stu-6': { s: [8.5, 9], abs: 2 },
+      'stu-1': { s: [4.0, 3.4, 1.0], abs: 2 }, // Soma: 8.4 (Aprovado)
+      'stu-2': { s: [3.6, 3.0, 0.9], abs: 2 }, // Soma: 7.5 (Aprovado)
+      'stu-3': { s: [4.8, 3.8, 1.0], abs: 0 }, // Soma: 9.6 (Distinção)
+      'stu-4': { s: [3.2, 3.0, 0.8], abs: 5 }, // Soma: 7.0 (Aprovado no limite)
+      'stu-5': { s: [4.2, 3.2, 1.0], abs: 1 }, // Soma: 8.4 (Aprovado)
+      'stu-6': { s: [4.5, 3.6, 1.0], abs: 2 }, // Soma: 9.1 (Distinção)
     }),
   };
 
@@ -224,15 +233,15 @@ export function createSeed() {
         evaluationId: 'd1-t1',
         title: 'Trabalho exegético: Romanos 8:28-39',
         description:
-          'Ensaio exegético-teológico de 4 a 6 páginas sobre o contexto paulino, análise dos termos gregos (prothesis, proginōskō, proorizō) e aplicação pastoral.',
+          'Ensaio exegético-teológico de 4 a 6 páginas sobre o contexto paulino, análise dos termos gregos (prothesis, proginōskō, proorizō) e aplicação pastoral. Vale até 3,0 pontos na soma final.',
         dueDate: '2026-10-28',
         submissions: [
-          { studentId: 'stu-1', fileName: 'Exegese_Rm8_LucasMendes.pdf', fileSize: '2,4 MB', submittedAt: '2026-10-26T14:32', grade: 8, feedback: 'Boa fundamentação no texto grego e diálogo com Calvino e Agostinho. Aprofunde a aplicação pastoral na última seção.' },
-          { studentId: 'stu-2', fileName: 'Exegese_Rm8_Amanda.docx', fileSize: '1,1 MB', submittedAt: '2026-10-27T19:15', grade: 6.5, feedback: 'Bom resumo temático, mas faltou a análise textual do v. 29. Atenção às normas de citação.' },
-          { studentId: 'stu-3', fileName: 'Ensaio_Soteriologia_Gabriel.pdf', fileSize: '3,2 MB', submittedAt: '2026-10-25T10:05', grade: 9, feedback: 'Trabalho primoroso: exegese rica, referências sólidas e redação impecável.' },
-          { studentId: 'stu-4', fileName: 'Mateus_Rm8.pdf', fileSize: '950 KB', submittedAt: '2026-10-28T23:45', grade: 5, feedback: 'Texto breve (2 páginas) e sem os termos gregos exigidos no roteiro.' },
-          { studentId: 'stu-5', fileName: 'Trabalho_Rm8_Priscila.pdf', fileSize: '1,8 MB', submittedAt: '2026-10-27T16:40', grade: 7.5, feedback: 'Bem estruturado, com argumentação clara sobre a aliança da graça.' },
-          { studentId: 'stu-6', fileName: 'Rm8_JoaoCastro.pdf', fileSize: '2,0 MB', submittedAt: '2026-10-26T09:12', grade: 9, feedback: 'Excelente articulação entre exegese e prática ministerial.' },
+          { studentId: 'stu-1', fileName: 'Exegese_Rm8_LucasMendes.pdf', fileSize: '2,4 MB', submittedAt: '2026-10-26T14:32', grade: 2.4, feedback: 'Boa fundamentação no texto grego e diálogo com Calvino e Agostinho. Conquistou 2,4 de 3,0 pontos.' },
+          { studentId: 'stu-2', fileName: 'Exegese_Rm8_Amanda.docx', fileSize: '1,1 MB', submittedAt: '2026-10-27T19:15', grade: 1.8, feedback: 'Bom resumo temático, mas faltou análise textual do v. 29. Conquistou 1,8 de 3,0 pontos.' },
+          { studentId: 'stu-3', fileName: 'Ensaio_Soteriologia_Gabriel.pdf', fileSize: '3,2 MB', submittedAt: '2026-10-25T10:05', grade: 2.8, feedback: 'Trabalho primoroso: exegese rica, referências sólidas e redação impecável. Conquistou 2,8 de 3,0 pontos.' },
+          { studentId: 'stu-4', fileName: 'Mateus_Rm8.pdf', fileSize: '950 KB', submittedAt: '2026-10-28T23:45', grade: 1.5, feedback: 'Texto breve (2 páginas) e sem os termos gregos exigidos no roteiro. Conquistou 1,5 de 3,0 pontos.' },
+          { studentId: 'stu-5', fileName: 'Trabalho_Rm8_Priscila.pdf', fileSize: '1,8 MB', submittedAt: '2026-10-27T16:40', grade: 2.3, feedback: 'Bem estruturado, com argumentação clara sobre a aliança da graça. Conquistou 2,3 de 3,0 pontos.' },
+          { studentId: 'stu-6', fileName: 'Rm8_JoaoCastro.pdf', fileSize: '2,0 MB', submittedAt: '2026-10-26T09:12', grade: 2.7, feedback: 'Excelente articulação entre exegese e prática ministerial. Conquistou 2,7 de 3,0 pontos.' },
         ],
       },
       {
@@ -240,7 +249,7 @@ export function createSeed() {
         disciplineId: 'disc-1',
         evaluationId: null,
         title: 'Fichamento: a Trindade nos Pais Apostólicos',
-        description: 'Fichamento do capítulo 3 da bibliografia básica e das cartas de Inácio de Antioquia. Atividade formativa, sem nota.',
+        description: 'Fichamento do capítulo 3 da bibliografia básica e das cartas de Inácio de Antioquia. Atividade formativa complementar, sem pontos diretos.',
         dueDate: '2026-11-30',
         submissions: [],
       },
@@ -249,7 +258,7 @@ export function createSeed() {
         disciplineId: 'disc-5',
         evaluationId: 'd5-s1',
         title: 'Roteiro do seminário: o argumento cosmológico',
-        description: 'Entregar o roteiro escrito do seminário (3 a 5 páginas) com as objeções principais e as respostas apologéticas do grupo.',
+        description: 'Entregar o roteiro escrito do seminário (3 a 5 páginas) com as objeções principais e as respostas apologéticas do grupo. Vale até 4,0 pontos na soma da disciplina.',
         dueDate: '2026-11-18',
         submissions: [
           { studentId: 'stu-3', fileName: 'Seminario_Cosmologico_Gabriel.pdf', fileSize: '1,5 MB', submittedAt: '2026-11-01T11:20', grade: null, feedback: null },
@@ -261,10 +270,10 @@ export function createSeed() {
         disciplineId: 'disc-2',
         evaluationId: 'd2-t1',
         title: 'Exegese de Filipenses 2:5-11',
-        description: 'Análise estrutural, lexical e teológica do hino cristológico de Filipenses 2.',
+        description: 'Análise estrutural, lexical e teológica do hino cristológico de Filipenses 2. Vale até 4,0 pontos na soma final.',
         dueDate: '2026-10-20',
         submissions: [
-          { studentId: 'stu-1', fileName: 'Exegese_Fp2_LucasMendes.pdf', fileSize: '2,1 MB', submittedAt: '2026-10-19T21:10', grade: 9, feedback: 'Muito bom tratamento da kenosis e das implicações éticas do texto.' },
+          { studentId: 'stu-1', fileName: 'Exegese_Fp2_LucasMendes.pdf', fileSize: '2,1 MB', submittedAt: '2026-10-19T21:10', grade: 3.6, feedback: 'Muito bom tratamento da kenosis e das implicações éticas. Conquistou 3,6 de 4,0 pontos.' },
         ],
       },
       {
@@ -272,7 +281,7 @@ export function createSeed() {
         disciplineId: 'disc-3',
         evaluationId: 'd3-r1',
         title: 'Resenha crítica: As Institutas (Livro I)',
-        description: 'Resenha de 3 páginas sobre o Livro I das Institutas da Religião Cristã, de João Calvino.',
+        description: 'Resenha de 3 páginas sobre o Livro I das Institutas da Religião Cristã, de João Calvino. Vale até 2,5 pontos na soma.',
         dueDate: '2026-11-25',
         submissions: [
           { studentId: 'stu-3', fileName: 'Resenha_Institutas_Gabriel.pdf', fileSize: '1,0 MB', submittedAt: '2026-11-02T08:44', grade: null, feedback: null },
@@ -291,7 +300,7 @@ export function createSeed() {
       { id: 'les-9', disciplineId: 'disc-4', module: 'Módulo 1 · Fundamentos', title: 'Aconselhamento bíblico: princípios', date: '2026-10-09', duration: '1h25', kind: 'gravada', url: '', summary: 'A suficiência das Escrituras no cuidado pastoral.', materials: [] },
     ],
     announcements: [
-      { id: 'ann-1', date: '2026-11-01', author: 'Secretaria Acadêmica', title: 'Prazo de lançamento de notas', content: 'O prazo para lançamento das notas parciais e convocação para recuperação é 15/11. Alunos com pendências devem procurar a coordenação.', important: true },
+      { id: 'ann-1', date: '2026-11-01', author: 'Secretaria Acadêmica', title: 'Prazo para lançamento dos pontos e recuperação', content: 'Lembramos aos docentes que a pontuação somada mínima para aprovação direta é 7,0 pontos. Alunos que somarem menos de 7,0 devem ser convocados para a recuperação até 15/11.', important: true },
       { id: 'ann-2', date: '2026-10-28', author: 'Direção', title: 'Semana Teológica 2026: “Fé e fidelidade no século XXI”', content: 'Inscrições gratuitas para alunos matriculados. Certificado de 20 horas complementares.', important: false },
     ],
   };

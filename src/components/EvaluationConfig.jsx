@@ -1,29 +1,27 @@
 import { useState } from 'react';
-import { Check, Info, Lock, Plus, Trash2 } from 'lucide-react';
+import { Check, Info, Lock, Plus, Trash2, HelpCircle } from 'lucide-react';
 import { EVALUATION_TYPES, RECOVERY_RULES } from '../data/seed';
-import { describeFormula, weightTotal } from '../lib/grades';
+import { describeFormula, pointsTotal } from '../lib/grades';
 import { Button, Callout, Card, CardHeader, Field, Input, Select, cn } from './ui';
 
 const PRESETS = [
-  { label: '2 provas + trabalho', items: [['Prova 1', 'prova', 30], ['Trabalho', 'trabalho', 30], ['Prova 2', 'prova', 40]] },
-  { label: 'Prova + seminário', items: [['Prova', 'prova', 60], ['Seminário', 'seminario', 40]] },
-  { label: 'Somente trabalhos', items: [['Trabalho 1', 'trabalho', 50], ['Trabalho 2', 'trabalho', 50]] },
-  { label: 'Avaliação contínua', items: [['Participação', 'participacao', 20], ['Fichamento', 'fichamento', 30], ['Resenha', 'resenha', 50]] },
-  { label: 'Prova única', items: [['Prova final', 'prova', 100]] },
+  { label: 'Provas + Trabalho (3 + 3 + 4)', items: [['Prova 1', 'prova', 3.0], ['Trabalho', 'trabalho', 3.0], ['Prova final', 'prova', 4.0]] },
+  { label: 'Prova + Seminário + Participação', items: [['Prova', 'prova', 5.0], ['Seminário', 'seminario', 4.0], ['Participação', 'participacao', 1.0]] },
+  { label: 'Com Presença/Pontualidade', items: [['Prova teórica', 'prova', 4.0], ['Trabalho', 'trabalho', 3.0], ['Presença / Frequência', 'presenca', 2.0], ['Participação', 'participacao', 1.0]] },
+  { label: '4 Trabalhos (2,5 cada)', items: [['Trabalho 1', 'trabalho', 2.5], ['Trabalho 2', 'trabalho', 2.5], ['Trabalho 3', 'trabalho', 2.5], ['Trabalho 4', 'trabalho', 2.5]] },
 ];
 
 const newId = () => `ev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
 /**
- * Editor dos critérios de avaliação de uma disciplina.
- * Use com key={discipline.id} para reiniciar ao trocar de disciplina.
+ * Editor dos critérios de avaliação de uma disciplina no modelo por soma de pontos.
  */
 export function EvaluationConfig({ discipline, onSave }) {
   const initial = {
     evaluations: discipline.evaluations,
-    passingGrade: discipline.passingGrade,
-    maxAbsences: discipline.maxAbsences,
-    recoveryRule: discipline.recoveryRule,
+    passingGrade: discipline.passingGrade ?? 7.0,
+    maxAbsences: discipline.maxAbsences ?? 15,
+    recoveryRule: discipline.recoveryRule ?? 'substitui_menor',
   };
   const [evals, setEvals] = useState(initial.evaluations);
   const [passingGrade, setPassingGrade] = useState(initial.passingGrade);
@@ -32,21 +30,31 @@ export function EvaluationConfig({ discipline, onSave }) {
   const [saved, setSaved] = useState(false);
 
   const locked = discipline.gradesClosed;
-  const total = weightTotal(evals);
-  const valid = evals.length > 0 && total === 100 && evals.every((e) => e.name.trim());
+  const total = pointsTotal(evals);
+  const valid = evals.length > 0 && Math.abs(total - 10.0) < 0.05 && evals.every((e) => e.name.trim());
   const current = { evaluations: evals, passingGrade, maxAbsences, recoveryRule };
   const dirty = JSON.stringify(current) !== JSON.stringify(initial);
   const removed = discipline.evaluations.filter((e) => !evals.some((x) => x.id === e.id));
 
   const updateEval = (id, patch) => setEvals((list) => list.map((e) => (e.id === id ? { ...e, ...patch } : e)));
   const removeEval = (id) => setEvals((list) => list.filter((e) => e.id !== id));
+  
   const addEval = () =>
-    setEvals((list) => [...list, { id: newId(), name: '', type: 'trabalho', weight: Math.max(0, 100 - weightTotal(list)) }]);
-  const applyPreset = (p) => setEvals(p.items.map(([name, type, weight]) => ({ id: newId(), name, type, weight })));
+    setEvals((list) => [
+      ...list, 
+      { id: newId(), name: '', type: 'trabalho', maxPoints: Math.max(0.5, Math.round((10.0 - pointsTotal(list)) * 10) / 10) }
+    ]);
+
+  const applyPreset = (p) =>
+    setEvals(p.items.map(([name, type, maxPoints]) => ({ id: newId(), name, type, maxPoints })));
+
   const distribute = () =>
     setEvals((list) => {
-      const base = Math.floor(100 / list.length);
-      return list.map((e, i) => ({ ...e, weight: i === list.length - 1 ? 100 - base * (list.length - 1) : base }));
+      const base = Math.floor((10.0 / list.length) * 10) / 10;
+      return list.map((e, i) => ({
+        ...e,
+        maxPoints: i === list.length - 1 ? Math.round((10.0 - base * (list.length - 1)) * 10) / 10 : base,
+      }));
     });
 
   const reset = () => {
@@ -59,7 +67,7 @@ export function EvaluationConfig({ discipline, onSave }) {
   const save = () => {
     onSave({
       ...current,
-      evaluations: evals.map((e) => ({ ...e, name: e.name.trim(), weight: Number(e.weight) })),
+      evaluations: evals.map((e) => ({ ...e, name: e.name.trim(), maxPoints: Number(e.maxPoints) })),
       passingGrade: Number(passingGrade),
       maxAbsences: Number(maxAbsences),
     });
@@ -67,10 +75,15 @@ export function EvaluationConfig({ discipline, onSave }) {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const barColor = total === 100 ? 'bg-brand-500' : total > 100 ? 'bg-rose-400' : 'bg-amber-400';
+  const barColor = total === 10.0 ? 'bg-brand-500' : total > 10.0 ? 'bg-rose-400' : 'bg-amber-400';
 
   return (
     <div className="space-y-6">
+      {/* Alerta explicativo do modelo por soma */}
+      <Callout icon={Info} tone="brand">
+        <strong>Sistema por Soma de Pontos:</strong> No SETA a nota final é a <strong>soma direta</strong> das notas obtidas pelo aluno. O professor distribui os 10,0 pontos da disciplina entre as atividades, e o aluno precisa somar no mínimo <strong>7,0 pontos</strong> para ser aprovado.
+      </Callout>
+
       {locked && (
         <Callout icon={Lock} tone="neutral">
           O diário desta disciplina foi enviado à secretaria. Os critérios ficam bloqueados até a direção reabri-lo.
@@ -78,11 +91,11 @@ export function EvaluationConfig({ discipline, onSave }) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* Composição da média */}
+        {/* Distribuição dos Pontos */}
         <Card className="lg:col-span-3">
           <CardHeader
-            title="Composição da média"
-            subtitle="Adicione provas, trabalhos, seminários ou outras avaliações e defina o peso de cada uma."
+            title="Distribuição dos 10,0 pontos da matéria"
+            subtitle="Adicione provas, trabalhos, presença, participação ou outras atividades e defina quanto vale cada uma."
           />
           <div className="space-y-5 p-5">
             {!locked && (
@@ -105,7 +118,7 @@ export function EvaluationConfig({ discipline, onSave }) {
               <div className="hidden grid-cols-12 gap-2 px-1 text-xs text-stone-400 sm:grid dark:text-stone-500">
                 <span className="col-span-6">Nome da avaliação</span>
                 <span className="col-span-3">Tipo</span>
-                <span className="col-span-2">Peso</span>
+                <span className="col-span-2">Pontos</span>
               </div>
               {evals.map((e) => (
                 <div key={e.id} className="grid grid-cols-12 items-center gap-2">
@@ -113,7 +126,7 @@ export function EvaluationConfig({ discipline, onSave }) {
                     className="col-span-12 sm:col-span-6"
                     value={e.name}
                     disabled={locked}
-                    placeholder="Ex.: Prova 1, Resenha..."
+                    placeholder="Ex.: Prova 1, Presença, Seminário..."
                     onChange={(ev) => updateEval(e.id, { name: ev.target.value })}
                   />
                   <Select
@@ -131,14 +144,15 @@ export function EvaluationConfig({ discipline, onSave }) {
                   <div className="relative col-span-4 sm:col-span-2">
                     <Input
                       type="number"
+                      step="0.5"
                       min="0"
-                      max="100"
+                      max="10"
                       className="pr-7 tabular-nums"
-                      value={e.weight}
+                      value={e.maxPoints}
                       disabled={locked}
-                      onChange={(ev) => updateEval(e.id, { weight: ev.target.value === '' ? '' : Number(ev.target.value) })}
+                      onChange={(ev) => updateEval(e.id, { maxPoints: ev.target.value === '' ? '' : Number(ev.target.value) })}
                     />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400">%</span>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400">pts</span>
                   </div>
                   <Button
                     variant="ghost"
@@ -160,38 +174,38 @@ export function EvaluationConfig({ discipline, onSave }) {
                   <Plus className="h-3.5 w-3.5" /> Adicionar avaliação
                 </Button>
                 <Button variant="ghost" size="sm" onClick={distribute} disabled={!evals.length}>
-                  Distribuir pesos igualmente
+                  Distribuir 10,0 pontos igualmente
                 </Button>
               </div>
             )}
 
             <div className="space-y-1.5 border-t border-stone-100 pt-4 dark:border-stone-800">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-stone-500 dark:text-stone-400">Soma dos pesos</span>
+                <span className="text-stone-500 dark:text-stone-400">Total de pontos distribuídos</span>
                 <span
                   className={cn(
                     'font-medium tabular-nums',
-                    total === 100 ? 'text-brand-600 dark:text-brand-300' : 'text-amber-600 dark:text-amber-400'
+                    total === 10.0 ? 'text-brand-600 dark:text-brand-300 font-bold' : 'text-amber-600 dark:text-amber-400'
                   )}
                 >
-                  {total}%
-                  {total < 100 && ` · faltam ${100 - total}%`}
-                  {total > 100 && ` · excede em ${total - 100}%`}
+                  {total.toFixed(1).replace('.', ',')} / 10,0 pts
+                  {total < 10.0 && ` · faltam ${(10.0 - total).toFixed(1).replace('.', ',')} pts`}
+                  {total > 10.0 && ` · excede em ${(total - 10.0).toFixed(1).replace('.', ',')} pts`}
                 </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
-                <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${Math.min(total, 100)}%` }} />
+                <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${Math.min((total / 10.0) * 100, 100)}%` }} />
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Regras */}
+        {/* Regras de Aprovação e Recuperação */}
         <div className="space-y-6 lg:col-span-2">
           <Card>
-            <CardHeader title="Aprovação e frequência" />
+            <CardHeader title="Critérios de aprovação direta" />
             <div className="grid grid-cols-2 gap-3 p-5">
-              <Field label="Média mínima">
+              <Field label="Nota somada mínima" hint="Total somado necessário">
                 <Input
                   type="number"
                   step="0.5"
@@ -202,7 +216,7 @@ export function EvaluationConfig({ discipline, onSave }) {
                   onChange={(e) => setPassingGrade(e.target.value)}
                 />
               </Field>
-              <Field label="Limite de faltas">
+              <Field label="Limite de faltas" hint="Máximo de faltas no período">
                 <Input
                   type="number"
                   min="0"
@@ -215,7 +229,7 @@ export function EvaluationConfig({ discipline, onSave }) {
           </Card>
 
           <Card>
-            <CardHeader title="Regra de recuperação" subtitle="Aplicada a quem ficar abaixo da média mínima." />
+            <CardHeader title="Regra de recuperação" subtitle="Aplicada caso a soma final fique abaixo de 7,0." />
             <div className="space-y-2 p-5">
               {RECOVERY_RULES.map((r) => {
                 const active = recoveryRule === r.id;
@@ -254,12 +268,16 @@ export function EvaluationConfig({ discipline, onSave }) {
         </div>
       </div>
 
-      {/* Resumo e ações */}
+      {/* Resumo da fórmula somada */}
       <Card className="p-5">
-        <p className="text-xs text-stone-500 dark:text-stone-400">Fórmula da média</p>
-        <p className="mt-1 text-sm text-stone-800 dark:text-stone-100">
-          {evals.length ? describeFormula(evals) : 'Nenhuma avaliação definida'}
+        <p className="text-xs text-stone-500 dark:text-stone-400">Fórmula de soma da disciplina</p>
+        <p className="mt-1 text-sm font-semibold text-stone-800 dark:text-stone-100">
+          {describeFormula(evals)}
         </p>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
+          Aprovação direta: Aluno com soma &ge; {Number(passingGrade).toFixed(1).replace('.', ',')} pontos.
+        </p>
+
         {removed.length > 0 && (
           <Callout icon={Info} tone="amber" className="mt-4">
             As notas já lançadas em <strong>{removed.map((e) => e.name).join(', ')}</strong> serão descartadas ao salvar.
@@ -268,20 +286,22 @@ export function EvaluationConfig({ discipline, onSave }) {
         {!locked && (
           <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
             {saved && (
-              <span className="mr-auto flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-300">
-                <Check className="h-4 w-4" /> Critérios salvos
+              <span className="mr-auto flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-300 font-medium">
+                <Check className="h-4 w-4" /> Critérios de soma salvos com sucesso
               </span>
             )}
             {!valid && evals.length > 0 && (
               <span className="mr-auto text-xs text-amber-600 dark:text-amber-400">
-                {total !== 100 ? 'A soma dos pesos precisa ser 100%.' : 'Dê um nome a todas as avaliações.'}
+                {Math.abs(total - 10.0) >= 0.05
+                  ? `Os pontos precisam somar exatamente 10,0 (atualmente somam ${total.toFixed(1).replace('.', ',')} pts).`
+                  : 'Dê um nome a todas as avaliações.'}
               </span>
             )}
             <Button variant="ghost" onClick={reset} disabled={!dirty}>
               Descartar
             </Button>
             <Button onClick={save} disabled={!valid || !dirty}>
-              Salvar critérios
+              Salvar critérios de pontuação
             </Button>
           </div>
         )}

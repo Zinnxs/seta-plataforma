@@ -21,9 +21,9 @@ export function ProfessorGrades({ discipline, disciplines, onChangeDiscipline })
 
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Alunos" value={st.count} />
-        <Stat label="Média da turma" value={fmtGrade(st.average)} />
-        <Stat label="Em recuperação" value={st.recovery} />
-        <Stat label="Média mínima" value={fmtGrade(discipline.passingGrade)} hint={`Até ${discipline.maxAbsences} faltas`} />
+        <Stat label="Pontuação média somada" value={`${fmtGrade(st.average)}`} hint="Total de 10,0 pts possíveis" />
+        <Stat label="Em recuperação" value={st.recovery} hint="Soma inferior a 7,0 pts" />
+        <Stat label="Soma mínima (aprovação)" value={`${fmtGrade(discipline.passingGrade)} pts`} hint={`Até ${discipline.maxAbsences} faltas`} />
       </div>
 
       <GradesTable

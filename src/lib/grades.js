@@ -1,7 +1,9 @@
 /**
  * Regras de cálculo de notas do SETA.
- * Cada disciplina define suas próprias avaliações (provas, trabalhos, seminários...)
- * com pesos em %, a média mínima, o limite de faltas e a regra de recuperação.
+ * SISTEMA POR PONTUAÇÃO ACUMULADA (SOMA DIRETA DE PONTOS):
+ * Cada disciplina distribui seus pontos (ex.: 10,0 pontos no total)
+ * entre provas, trabalhos, seminários, participação, presença, etc.
+ * O aluno é aprovado se a SOMA das notas atingir pelo menos a nota de corte (ex.: 7,0 pontos).
  */
 import { typeLabel } from '../data/seed';
 
@@ -21,58 +23,96 @@ export const STATUS = {
 
 export const APPROVED = ['aprovado', 'distincao', 'aprovado_rec'];
 
-export const weightTotal = (evals) => evals.reduce((s, e) => s + (Number(e.weight) || 0), 0);
+/** Soma dos pontos máximos distribuídos na disciplina (ex: 3.0 + 3.0 + 4.0 = 10.0 pts) */
+export const pointsTotal = (evals = []) =>
+  r1(evals.reduce((s, e) => s + (Number(e.maxPoints) || 0), 0));
 
 export function computeResult(disc, record) {
   const evals = disc.evaluations || [];
   const rec = record || { scores: {}, recovery: null, absences: 0 };
   const scores = rec.scores || {};
-  const total = weightTotal(evals) || 1;
-  const pass = Number(disc.passingGrade);
-  const base = { average: null, final: null, status: 'sem_notas', needsRecovery: false, recoveryApplied: false };
+  const pass = Number(disc.passingGrade) || 7.0;
+  const maxPossible = pointsTotal(evals) || 10.0;
+
+  const base = {
+    sum: null,
+    final: null,
+    maxPossible,
+    status: 'sem_notas',
+    needsRecovery: false,
+    recoveryApplied: false,
+  };
 
   const withAbsences = (res) =>
-    Number(rec.absences) > Number(disc.maxAbsences) ? { ...res, status: 'reprovado_falta', needsRecovery: false } : res;
+    Number(rec.absences) > Number(disc.maxAbsences)
+      ? { ...res, status: 'reprovado_falta', needsRecovery: false }
+      : res;
 
   const filled = evals.filter((e) => isNum(scores[e.id]));
   if (!evals.length || !filled.length) return withAbsences(base);
 
-  const filledWeight = filled.reduce((s, e) => s + Number(e.weight), 0) || 1;
-  const sum = filled.reduce((s, e) => s + scores[e.id] * Number(e.weight), 0);
+  // Soma direta dos pontos conquistados
+  const currentSum = r1(filled.reduce((s, e) => s + scores[e.id], 0));
 
-  // Ainda faltam notas: mostra média parcial
+  // Se ainda faltam avaliações a serem lançadas
   if (filled.length < evals.length) {
-    const partial = r1(sum / filledWeight);
-    return withAbsences({ ...base, average: partial, final: partial, status: 'em_andamento' });
+    return withAbsences({
+      ...base,
+      sum: currentSum,
+      final: currentSum,
+      status: 'em_andamento',
+    });
   }
 
-  const average = r1(sum / total);
-  if (average >= pass) {
-    return withAbsences({ ...base, average, final: average, status: average >= 9 ? 'distincao' : 'aprovado' });
+  // Todas as avaliações foram lançadas: verifica se atingiu os 7,0 pontos somados
+  if (currentSum >= pass) {
+    return withAbsences({
+      ...base,
+      sum: currentSum,
+      final: currentSum,
+      status: currentSum >= 9.0 ? 'distincao' : 'aprovado',
+    });
   }
 
+  // Soma < 7,0: aluno precisa de recuperação
   if (!isNum(rec.recovery)) {
-    return withAbsences({ ...base, average, final: average, status: 'recuperacao', needsRecovery: true });
+    return withAbsences({
+      ...base,
+      sum: currentSum,
+      final: currentSum,
+      status: 'recuperacao',
+      needsRecovery: true,
+    });
   }
 
-  let final = average;
+  // Lógica de recuperação em sistema de soma de pontos
+  let finalScore = currentSum;
+
   if (disc.recoveryRule === 'substitui_menor') {
-    // menor nota; em caso de empate, a de maior peso (mais favorável ao aluno)
-    const target = [...evals].sort((a, b) => scores[a.id] - scores[b.id] || b.weight - a.weight)[0];
-    if (rec.recovery > scores[target.id]) {
-      final = r1(evals.reduce((s, e) => s + (e.id === target.id ? rec.recovery : scores[e.id]) * e.weight, 0) / total);
+    // A nota da recuperação entra no lugar da menor pontuação obtida
+    // Encontra a avaliação com pior pontuação (em pontos ou proporcionalmente)
+    const worst = [...evals].sort((a, b) => (scores[a.id] ?? 0) - (scores[b.id] ?? 0))[0];
+    const oldScore = scores[worst.id] ?? 0;
+    if (rec.recovery > oldScore) {
+      finalScore = r1(currentSum - oldScore + rec.recovery);
     }
-  } else if (disc.recoveryRule === 'media_simples') {
-    final = r1((average + rec.recovery) / 2);
-  } else if (disc.recoveryRule === 'nota_minima') {
-    final = rec.recovery >= pass ? pass : r1(Math.max(average, rec.recovery));
+  } else if (disc.recoveryRule === 'prova_substitutiva') {
+    // Prova geral de recuperação (vale até 10,0 pontos): se tirar >= pass (7,0), é aprovado na recuperação
+    if (rec.recovery >= pass) {
+      finalScore = r1(rec.recovery);
+    } else {
+      finalScore = r1(Math.max(currentSum, rec.recovery));
+    }
+  } else if (disc.recoveryRule === 'soma_complementar') {
+    // Pontos somados complementarmente com teto na nota de corte (7,0)
+    finalScore = r1(Math.min(pass, currentSum + rec.recovery));
   }
 
   return withAbsences({
     ...base,
-    average,
-    final,
-    status: final >= pass ? 'aprovado_rec' : 'reprovado',
+    sum: currentSum,
+    final: finalScore,
+    status: finalScore >= pass ? 'aprovado_rec' : 'reprovado',
     recoveryApplied: true,
   });
 }
@@ -88,5 +128,9 @@ export function disciplineStats(disc, gradesByStudent = {}) {
   };
 }
 
-export const describeFormula = (evals) =>
-  evals.map((e) => `${e.name || typeLabel(e.type)} × ${Number(e.weight) || 0}%`).join(' + ');
+export const describeFormula = (evals = []) => {
+  if (!evals.length) return 'Nenhuma avaliação definida';
+  const parts = evals.map((e) => `${e.name || typeLabel(e.type)} (${(Number(e.maxPoints) || 0).toFixed(1).replace('.', ',')} pts)`);
+  const total = pointsTotal(evals).toFixed(1).replace('.', ',');
+  return `${parts.join(' + ')} = ${total} pts totais`;
+};

@@ -68,7 +68,7 @@ export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipli
                       {isPast(a.dueDate) && ' (encerrado)'}
                     </span>
                     <span>
-                      {evaluation ? `Vale nota em: ${evaluation.name} (${evaluation.weight}%)` : 'Atividade sem nota vinculada'}
+                      {evaluation ? `Vale até ${Number(evaluation.maxPoints).toFixed(1).replace('.', ',')} pts em: ${evaluation.name}` : 'Atividade formativa sem pontos'}
                     </span>
                   </div>
                 </div>
@@ -195,11 +195,11 @@ function NewAssignmentModal({ discipline, onClose, onSave }) {
           <Field label="Data de entrega">
             <Input type="date" value={form.dueDate} onChange={set('dueDate')} />
           </Field>
-          <Field label="Vale nota em" hint="A correção é lançada automaticamente no diário.">
+          <Field label="Vinculado à atividade de" hint="A pontuação obtida é somada automaticamente no diário.">
             <Select value={form.evaluationId} onChange={set('evaluationId')}>
               {discipline.evaluations.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.name} ({e.weight}%)
+                  {e.name} (até {Number(e.maxPoints).toFixed(1).replace('.', ',')} pts)
                 </option>
               ))}
               <option value="">Sem nota (atividade formativa)</option>
@@ -212,16 +212,17 @@ function NewAssignmentModal({ discipline, onClose, onSave }) {
 }
 
 function ReviewModal({ assignment, submission, evaluation, student, onClose, onSave }) {
+  const maxAllowed = evaluation ? Number(evaluation.maxPoints) : 10;
   const [grade, setGrade] = useState(submission.grade !== null ? String(submission.grade).replace('.', ',') : '');
   const [feedback, setFeedback] = useState(submission.feedback ?? '');
   const parsed = Number(grade.replace(',', '.'));
-  const valid = grade.trim() !== '' && !Number.isNaN(parsed) && parsed >= 0 && parsed <= 10;
+  const valid = grade.trim() !== '' && !Number.isNaN(parsed) && parsed >= 0 && parsed <= maxAllowed;
 
   return (
     <Modal
       open
       onClose={onClose}
-      title="Correção"
+      title="Correção e Atribuição de Pontos"
       description={`${student?.name} · ${assignment.title}`}
       footer={
         <>
@@ -229,7 +230,7 @@ function ReviewModal({ assignment, submission, evaluation, student, onClose, onS
             Cancelar
           </Button>
           <Button disabled={!valid} onClick={() => onSave(Math.round(parsed * 10) / 10, feedback.trim())}>
-            Salvar correção
+            Salvar pontuação
           </Button>
         </>
       }
@@ -249,10 +250,10 @@ function ReviewModal({ assignment, submission, evaluation, student, onClose, onS
         </div>
 
         <Field
-          label="Nota (0 a 10)"
-          hint={evaluation ? `Será lançada em “${evaluation.name}” no diário de notas.` : 'Atividade formativa: a nota não entra na média.'}
+          label={`Pontos obtidos pelo aluno (0 a ${maxAllowed.toFixed(1).replace('.', ',')} pts)`}
+          hint={evaluation ? `Será somado na atividade “${evaluation.name}” do diário.` : 'Atividade formativa: a pontuação não entra na soma final.'}
         >
-          <Input value={grade} onChange={(e) => setGrade(e.target.value)} inputMode="decimal" placeholder="Ex.: 8,5" className="w-32 tabular-nums" />
+          <Input value={grade} onChange={(e) => setGrade(e.target.value)} inputMode="decimal" placeholder={`Ex.: ${Math.min(2.5, maxAllowed).toFixed(1).replace('.', ',')}`} className="w-36 tabular-nums" />
         </Field>
 
         <Field label="Comentário para o aluno">

@@ -5,8 +5,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { createSeed, DEMO_LOGINS } from '../data/seed';
 
-const DATA_KEY = 'seta-demo-data-v2';
-const SESSION_KEY = 'seta-session-v2';
+const DATA_KEY = 'seta-demo-data-v3';
+const SESSION_KEY = 'seta-session-v3';
 
 const Ctx = createContext(null);
 

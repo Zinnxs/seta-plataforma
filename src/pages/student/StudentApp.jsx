@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
-import { computeResult, describeFormula, isNum } from '../../lib/grades';
+import { computeResult, describeFormula, isNum, pointsTotal } from '../../lib/grades';
 import { fmtDate, fmtDateTime, fmtGrade, fmtSize, isPast, personName } from '../../lib/format';
 import { typeLabel } from '../../data/seed';
 import { 
@@ -43,7 +43,7 @@ export function StudentApp() {
 
   const student = currentUser;
 
-  // Disciplinas e notas do aluno
+  // Disciplinas e pontuações do aluno
   const studentRows = data.disciplines.map(d => {
     const prof = data.professors.find(p => p.id === d.professorId);
     const rec = data.grades[d.id]?.[student.id] || { scores: {}, recovery: null, absences: 0 };
@@ -132,14 +132,14 @@ function StudentReportCard({ student, rows, period }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
         <Card className="p-5">
-          <p className="text-xs text-stone-500 dark:text-stone-400">Coeficiente de Rendimento (CR)</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{overallAvg}</p>
-          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Média geral ponderada</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Pontuação Média Acumulada</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{overallAvg} <span className="text-sm font-normal text-stone-400">/ 10,0</span></p>
+          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Média das somas das disciplinas</p>
         </Card>
         <Card className="p-5">
           <p className="text-xs text-stone-500 dark:text-stone-400">Disciplinas Cursadas</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{rows.length}</p>
-          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Neste semestre letivo</p>
+          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Neste período letivo</p>
         </Card>
         <Card className="p-5 col-span-2 sm:col-span-1">
           <p className="text-xs text-stone-500 dark:text-stone-400">Em Recuperação</p>
@@ -147,73 +147,84 @@ function StudentReportCard({ student, rows, period }) {
             {inRecovery}
           </p>
           <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
-            {inRecovery ? 'Atenção aos prazos' : 'Situação regular'}
+            {inRecovery ? 'Soma < 7,0 em alguma matéria' : 'Todas as somas &ge; 7,0 pts'}
           </p>
         </Card>
       </div>
 
       <div className="space-y-4">
-        {rows.map(({ discipline, professor, rec, res }) => (
-          <Card key={discipline.id} className="p-5">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{discipline.code}</span>
-                  <span className="text-xs text-stone-400">· {discipline.workload}h</span>
+        {rows.map(({ discipline, professor, rec, res }) => {
+          const totalPoints = pointsTotal(discipline.evaluations);
+          return (
+            <Card key={discipline.id} className="p-5">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{discipline.code}</span>
+                    <span className="text-xs text-stone-400">· {discipline.workload}h</span>
+                  </div>
+                  <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50 mt-0.5">{discipline.name}</h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                    Docente: {personName(professor)} · {discipline.schedule}
+                  </p>
                 </div>
-                <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50 mt-0.5">{discipline.name}</h3>
-                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                  Docente: {personName(professor)} · {discipline.schedule}
-                </p>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="text-xs text-stone-400 dark:text-stone-500 block">Nota Somada</span>
+                    <span className={`text-xl font-bold tabular-nums ${
+                      res.final >= 7.0 
+                        ? 'text-stone-900 dark:text-stone-50' 
+                        : 'text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {fmtGrade(res.final)}
+                      <span className="text-xs font-normal text-stone-400"> / {totalPoints.toFixed(1).replace('.', ',')} pts</span>
+                    </span>
+                  </div>
+                  <StatusBadge status={res.status} />
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <span className="text-xs text-stone-400 dark:text-stone-500 block">Média Final</span>
-                  <span className="text-xl font-bold tabular-nums text-stone-900 dark:text-stone-50">
-                    {fmtGrade(res.final)}
+              {/* Critérios dinâmicos da matéria com pontos máximos */}
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 text-center text-xs">
+                {discipline.evaluations.map(e => (
+                  <div key={e.id} className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
+                    <span className="text-stone-400 dark:text-stone-500 block truncate" title={e.name}>{e.name}</span>
+                    <span className="text-sm font-semibold text-stone-800 dark:text-stone-100 my-0.5 block">
+                      {fmtGrade(rec.scores[e.id])}
+                    </span>
+                    <span className="text-[10px] text-stone-400">vale até {Number(e.maxPoints).toFixed(1).replace('.', ',')} pts</span>
+                  </div>
+                ))}
+
+                <div className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
+                  <span className="text-stone-400 dark:text-stone-500 block">Recuperação</span>
+                  <span className="text-sm font-semibold text-amber-600 dark:text-amber-400 my-0.5 block">
+                    {fmtGrade(rec.recovery)}
+                  </span>
+                  <span className="text-[10px] text-stone-400">
+                    {res.recoveryApplied ? 'Aplicada na soma' : 'se soma < 7,0'}
                   </span>
                 </div>
-                <StatusBadge status={res.status} />
-              </div>
-            </div>
 
-            {/* Critérios dinâmicos da matéria */}
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 text-center text-xs">
-              {discipline.evaluations.map(e => (
-                <div key={e.id} className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                  <span className="text-stone-400 dark:text-stone-500 block truncate" title={e.name}>{e.name}</span>
+                <div className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
+                  <span className="text-stone-400 dark:text-stone-500 block">Faltas</span>
                   <span className="text-sm font-semibold text-stone-800 dark:text-stone-100 my-0.5 block">
-                    {fmtGrade(rec.scores[e.id])}
+                    {rec.absences}
                   </span>
-                  <span className="text-[10px] text-stone-400">{e.weight}% da média</span>
+                  <span className="text-[10px] text-stone-400">Máx. {discipline.maxAbsences}</span>
                 </div>
-              ))}
-
-              <div className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                <span className="text-stone-400 dark:text-stone-500 block">Recuperação</span>
-                <span className="text-sm font-semibold text-amber-600 dark:text-amber-400 my-0.5 block">
-                  {fmtGrade(rec.recovery)}
-                </span>
-                <span className="text-[10px] text-stone-400">
-                  {res.recoveryApplied ? 'Aplicada' : 'Se necessária'}
-                </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                <span className="text-stone-400 dark:text-stone-500 block">Faltas</span>
-                <span className="text-sm font-semibold text-stone-800 dark:text-stone-100 my-0.5 block">
-                  {rec.absences}
+              <div className="mt-3 flex flex-wrap items-center justify-between text-[11px] text-stone-400 dark:text-stone-500">
+                <span>Composição: {describeFormula(discipline.evaluations)}</span>
+                <span className="font-medium text-stone-600 dark:text-stone-300">
+                  Nota mínima somada para aprovação: {fmtGrade(discipline.passingGrade)} pontos
                 </span>
-                <span className="text-[10px] text-stone-400">Máx. {discipline.maxAbsences}</span>
               </div>
-            </div>
-
-            <p className="mt-3 text-[11px] text-stone-400 dark:text-stone-500">
-              Fórmula de cálculo: {describeFormula(discipline.evaluations)} · Média mínima para aprovação: {fmtGrade(discipline.passingGrade)}.
-            </p>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     </>
   );
@@ -230,7 +241,7 @@ function StudentAssignments({ assignments, onOpenSubmit }) {
     <>
       <PageHeader
         title="Trabalhos e Atividades"
-        subtitle="Envie seus ensaios, exegeses e fichamentos teológicos e acompanhe a correção dos professores."
+        subtitle="Envie seus ensaios, exegeses e fichamentos teológicos e acompanhe a pontuação atribuída pelo professor."
       />
 
       <div className="mb-6">
@@ -253,6 +264,7 @@ function StudentAssignments({ assignments, onOpenSubmit }) {
         <div className="space-y-4">
           {visible.map(a => {
             const sub = a.submission;
+            const maxPts = a.evalItem?.maxPoints ? Number(a.evalItem.maxPoints).toFixed(1).replace('.', ',') : null;
             return (
               <Card key={a.id} className="p-5">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-3">
@@ -272,8 +284,10 @@ function StudentAssignments({ assignments, onOpenSubmit }) {
                     {sub ? (
                       sub.grade !== null ? (
                         <div className="text-right">
-                          <span className="text-xs text-stone-400 block">Nota Atribuída</span>
-                          <span className="text-lg font-bold text-brand-600 dark:text-brand-400">{fmtGrade(sub.grade)} / 10,0</span>
+                          <span className="text-xs text-stone-400 block">Pontos Obtidos</span>
+                          <span className="text-lg font-bold text-brand-600 dark:text-brand-400">
+                            {fmtGrade(sub.grade)} {maxPts && <span className="text-xs font-normal text-stone-400">/ {maxPts} pts</span>}
+                          </span>
                         </div>
                       ) : (
                         <Badge tone="amber">Aguardando correção</Badge>
