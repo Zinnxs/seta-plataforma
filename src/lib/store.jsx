@@ -25,6 +25,7 @@ export function StoreProvider({ children }) {
   const [data, setData] = useState(() => loadLocal(DATA_KEY, createSeed));
   const [session, setSession] = useState(() => loadLocal(SESSION_KEY, () => null));
   const [syncStatus, setSyncStatus] = useState(isSupabaseConfigured ? 'syncing' : 'local_only');
+  const [lastSyncError, setLastSyncError] = useState(null);
 
   // Salva no cache local do navegador sempre que houver alteração
   useEffect(() => {
@@ -38,7 +39,10 @@ export function StoreProvider({ children }) {
 
   // Carrega dados iniciais do Supabase se estiver configurado
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase) {
+      setSyncStatus('local_only');
+      return;
+    }
 
     let isMounted = true;
     async function loadFromSupabase() {
@@ -61,113 +65,125 @@ export function StoreProvider({ children }) {
           supabase.from('seta_announcements').select('*'),
         ]);
 
-        if (uErr || dErr || gErr) {
-          console.warn('Erro ao carregar do Supabase, usando dados locais:', uErr || dErr || gErr);
-          if (isMounted) setSyncStatus('error');
+        if (uErr) {
+          console.error('Erro ao ler tabela seta_users do Supabase:', uErr);
+          if (isMounted) {
+            setSyncStatus('error');
+            setLastSyncError(`Tabela seta_users: ${uErr.message}`);
+          }
           return;
         }
 
-        if (usersData && usersData.length > 0) {
-          const professors = usersData
-            .filter((u) => u.role === 'professor')
-            .map((u) => ({ ...u, password: u.password || 'seta123' }));
-          const admins = usersData
-            .filter((u) => u.role === 'admin')
-            .map((u) => ({ ...u, password: u.password || 'setaadmin987' }));
-          const students = usersData
-            .filter((u) => u.role === 'aluno')
-            .map((u) => ({ ...u, password: u.password || 'seta123' }));
-
-          const disciplines = (discData || []).map((d) => ({
-            id: d.id,
-            code: d.code,
-            name: d.name,
-            professorId: d.professor_id,
-            course: d.course,
-            workload: d.workload,
-            schedule: d.schedule,
-            passingGrade: Number(d.passing_grade),
-            maxAbsences: d.max_absences,
-            recoveryRule: d.recovery_rule,
-            gradesClosed: d.grades_closed,
-            evaluations: d.evaluations || [],
-          }));
-
-          const grades = {};
-          disciplines.forEach((d) => {
-            grades[d.id] = {};
-          });
-
-          (gradesData || []).forEach((row) => {
-            if (!grades[row.discipline_id]) grades[row.discipline_id] = {};
-            grades[row.discipline_id][row.student_id] = {
-              scores: row.scores || {},
-              recovery: row.recovery !== null ? Number(row.recovery) : null,
-              absences: row.absences || 0,
-            };
-          });
-
-          // Preenche alunos sem nota registrada com objeto vazio
-          disciplines.forEach((d) => {
-            students.forEach((s) => {
-              if (!grades[d.id][s.id]) {
-                grades[d.id][s.id] = { scores: {}, recovery: null, absences: 0 };
-              }
-            });
-          });
-
-          const assignments = (assignData || []).map((a) => ({
-            id: a.id,
-            disciplineId: a.discipline_id,
-            evaluationId: a.evaluation_id,
-            title: a.title,
-            description: a.description,
-            dueDate: a.due_date,
-            submissions: a.submissions || [],
-          }));
-
-          const lessons = (lessonsData || []).map((l) => ({
-            id: l.id,
-            disciplineId: l.discipline_id,
-            module: l.module,
-            title: l.title,
-            date: l.date,
-            duration: l.duration,
-            kind: l.kind,
-            url: l.url,
-            summary: l.summary,
-            materials: l.materials || [],
-          }));
-
-          const announcements = (annData || []).map((an) => ({
-            id: an.id,
-            date: an.date,
-            author: an.author,
-            title: an.title,
-            content: an.content,
-            important: an.important,
-          }));
-
+        if (dErr) {
+          console.error('Erro ao ler tabela seta_disciplines do Supabase:', dErr);
           if (isMounted) {
-            setData((prev) => ({
-              ...prev,
-              professors,
-              admins: admins.length ? admins : prev.admins,
-              students,
-              disciplines,
-              grades,
-              assignments,
-              lessons,
-              announcements,
-            }));
-            setSyncStatus('synced');
+            setSyncStatus('error');
+            setLastSyncError(`Tabela seta_disciplines: ${dErr.message}`);
           }
-        } else {
-          if (isMounted) setSyncStatus('synced');
+          return;
+        }
+
+        const professors = (usersData || [])
+          .filter((u) => u.role === 'professor')
+          .map((u) => ({ ...u, password: u.password || 'seta123' }));
+        const admins = (usersData || [])
+          .filter((u) => u.role === 'admin')
+          .map((u) => ({ ...u, password: u.password || 'setaadmin987' }));
+        const students = (usersData || [])
+          .filter((u) => u.role === 'aluno')
+          .map((u) => ({ ...u, password: u.password || 'seta123' }));
+
+        const disciplines = (discData || []).map((d) => ({
+          id: d.id,
+          code: d.code,
+          name: d.name,
+          professorId: d.professor_id,
+          course: d.course || 'Bacharel em Teologia',
+          workload: d.workload,
+          schedule: d.schedule,
+          passingGrade: Number(d.passing_grade),
+          maxAbsences: d.max_absences,
+          recoveryRule: d.recovery_rule,
+          gradesClosed: d.grades_closed,
+          evaluations: d.evaluations || [],
+        }));
+
+        const grades = {};
+        disciplines.forEach((d) => {
+          grades[d.id] = {};
+        });
+
+        (gradesData || []).forEach((row) => {
+          if (!grades[row.discipline_id]) grades[row.discipline_id] = {};
+          grades[row.discipline_id][row.student_id] = {
+            scores: row.scores || {},
+            recovery: row.recovery !== null ? Number(row.recovery) : null,
+            absences: row.absences || 0,
+          };
+        });
+
+        // Preenche alunos sem nota registrada com objeto vazio
+        disciplines.forEach((d) => {
+          students.forEach((s) => {
+            if (!grades[d.id][s.id]) {
+              grades[d.id][s.id] = { scores: {}, recovery: null, absences: 0 };
+            }
+          });
+        });
+
+        const assignments = (assignData || []).map((a) => ({
+          id: a.id,
+          disciplineId: a.discipline_id,
+          evaluationId: a.evaluation_id,
+          title: a.title,
+          description: a.description,
+          dueDate: a.due_date,
+          submissions: a.submissions || [],
+        }));
+
+        const lessons = (lessonsData || []).map((l) => ({
+          id: l.id,
+          disciplineId: l.discipline_id,
+          module: l.module,
+          title: l.title,
+          date: l.date,
+          duration: l.duration,
+          kind: l.kind,
+          url: l.url,
+          summary: l.summary,
+          materials: l.materials || [],
+        }));
+
+        const announcements = (annData || []).map((an) => ({
+          id: an.id,
+          date: an.date,
+          author: an.author,
+          title: an.title,
+          content: an.content,
+          important: an.important,
+        }));
+
+        if (isMounted) {
+          setData((prev) => ({
+            ...prev,
+            professors,
+            admins: admins.length > 0 ? admins : prev.admins,
+            students,
+            disciplines,
+            grades,
+            assignments,
+            lessons,
+            announcements: announcements.length > 0 ? announcements : prev.announcements,
+          }));
+          setSyncStatus('synced');
+          setLastSyncError(null);
         }
       } catch (err) {
         console.error('Falha de conexão com Supabase:', err);
-        if (isMounted) setSyncStatus('error');
+        if (isMounted) {
+          setSyncStatus('error');
+          setLastSyncError(err.message);
+        }
       }
     }
 
@@ -197,7 +213,7 @@ export function StoreProvider({ children }) {
     if (!isSupabaseConfigured || !supabase) return;
     try {
       setSyncStatus('syncing');
-      await supabase.from('seta_grades').upsert(
+      const { error } = await supabase.from('seta_grades').upsert(
         {
           discipline_id: discId,
           student_id: studentId,
@@ -208,7 +224,13 @@ export function StoreProvider({ children }) {
         },
         { onConflict: 'discipline_id,student_id' }
       );
-      setSyncStatus('synced');
+      if (error) {
+        console.error('Erro ao salvar nota no Supabase:', error);
+        setSyncStatus('error');
+        setLastSyncError(error.message);
+      } else {
+        setSyncStatus('synced');
+      }
     } catch (e) {
       console.warn('Erro ao salvar nota no Supabase:', e);
       setSyncStatus('error');
@@ -216,15 +238,18 @@ export function StoreProvider({ children }) {
   };
 
   const syncDisciplineToSupabase = async (disc) => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase) {
+      console.warn('Supabase não conectado. Disciplina salva apenas no cache local deste navegador.');
+      return;
+    }
     try {
       setSyncStatus('syncing');
-      await supabase.from('seta_disciplines').upsert({
+      const { error } = await supabase.from('seta_disciplines').upsert({
         id: disc.id,
         code: disc.code,
         name: disc.name,
         professor_id: disc.professorId,
-        course: disc.course,
+        course: disc.course || 'Bacharel em Teologia',
         workload: disc.workload,
         schedule: disc.schedule,
         passing_grade: disc.passingGrade,
@@ -233,32 +258,53 @@ export function StoreProvider({ children }) {
         grades_closed: disc.gradesClosed,
         evaluations: disc.evaluations,
       });
-      setSyncStatus('synced');
+
+      if (error) {
+        console.error('Erro ao salvar disciplina no Supabase:', error);
+        setSyncStatus('error');
+        setLastSyncError(`Erro ao salvar matéria: ${error.message}`);
+      } else {
+        setSyncStatus('synced');
+        setLastSyncError(null);
+      }
     } catch (e) {
       console.warn('Erro ao salvar disciplina no Supabase:', e);
       setSyncStatus('error');
+      setLastSyncError(e.message);
     }
   };
 
   const syncUserToSupabase = async (user) => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase) {
+      console.warn('Supabase não conectado. Usuário salvo apenas no cache local deste navegador.');
+      return;
+    }
     try {
       setSyncStatus('syncing');
-      await supabase.from('seta_users').upsert({
+      const { error } = await supabase.from('seta_users').upsert({
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         title: user.title || null,
         enrollment: user.enrollment || null,
-        course: user.course || null,
+        course: user.course || 'Bacharel em Teologia',
         year: user.year || null,
         password: user.password || 'seta123',
       });
-      setSyncStatus('synced');
+
+      if (error) {
+        console.error('Erro ao salvar usuário no Supabase:', error);
+        setSyncStatus('error');
+        setLastSyncError(`Erro ao salvar usuário: ${error.message}`);
+      } else {
+        setSyncStatus('synced');
+        setLastSyncError(null);
+      }
     } catch (e) {
       console.warn('Erro ao salvar usuário no Supabase:', e);
       setSyncStatus('error');
+      setLastSyncError(e.message);
     }
   };
 
@@ -266,8 +312,14 @@ export function StoreProvider({ children }) {
     if (!isSupabaseConfigured || !supabase) return;
     try {
       setSyncStatus('syncing');
-      await supabase.from('seta_users').delete().eq('id', userId);
-      setSyncStatus('synced');
+      const { error } = await supabase.from('seta_users').delete().eq('id', userId);
+      if (error) {
+        console.error('Erro ao deletar usuário no Supabase:', error);
+        setSyncStatus('error');
+        setLastSyncError(error.message);
+      } else {
+        setSyncStatus('synced');
+      }
     } catch (e) {
       console.warn('Erro ao deletar usuário no Supabase:', e);
       setSyncStatus('error');
@@ -278,8 +330,14 @@ export function StoreProvider({ children }) {
     if (!isSupabaseConfigured || !supabase) return;
     try {
       setSyncStatus('syncing');
-      await supabase.from('seta_disciplines').delete().eq('id', discId);
-      setSyncStatus('synced');
+      const { error } = await supabase.from('seta_disciplines').delete().eq('id', discId);
+      if (error) {
+        console.error('Erro ao deletar disciplina no Supabase:', error);
+        setSyncStatus('error');
+        setLastSyncError(error.message);
+      } else {
+        setSyncStatus('synced');
+      }
     } catch (e) {
       console.warn('Erro ao deletar disciplina no Supabase:', e);
       setSyncStatus('error');
@@ -290,7 +348,7 @@ export function StoreProvider({ children }) {
     if (!isSupabaseConfigured || !supabase) return;
     try {
       setSyncStatus('syncing');
-      await supabase.from('seta_assignments').upsert({
+      const { error } = await supabase.from('seta_assignments').upsert({
         id: assignment.id,
         discipline_id: assignment.disciplineId,
         evaluation_id: assignment.evaluationId,
@@ -299,7 +357,12 @@ export function StoreProvider({ children }) {
         due_date: assignment.dueDate,
         submissions: assignment.submissions,
       });
-      setSyncStatus('synced');
+      if (error) {
+        console.error('Erro ao salvar trabalho no Supabase:', error);
+        setSyncStatus('error');
+      } else {
+        setSyncStatus('synced');
+      }
     } catch (e) {
       console.warn('Erro ao salvar trabalho no Supabase:', e);
       setSyncStatus('error');
@@ -310,7 +373,7 @@ export function StoreProvider({ children }) {
     if (!isSupabaseConfigured || !supabase) return;
     try {
       setSyncStatus('syncing');
-      await supabase.from('seta_lessons').upsert({
+      const { error } = await supabase.from('seta_lessons').upsert({
         id: lesson.id,
         discipline_id: lesson.disciplineId,
         module: lesson.module,
@@ -322,7 +385,12 @@ export function StoreProvider({ children }) {
         summary: lesson.summary,
         materials: lesson.materials,
       });
-      setSyncStatus('synced');
+      if (error) {
+        console.error('Erro ao salvar aula no Supabase:', error);
+        setSyncStatus('error');
+      } else {
+        setSyncStatus('synced');
+      }
     } catch (e) {
       console.warn('Erro ao salvar aula no Supabase:', e);
       setSyncStatus('error');
@@ -593,6 +661,7 @@ export function StoreProvider({ children }) {
         currentUser,
         isSupabaseConfigured,
         syncStatus,
+        lastSyncError,
         credentialsSource,
         ...actions,
       }}

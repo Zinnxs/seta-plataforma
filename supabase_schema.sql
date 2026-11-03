@@ -1,7 +1,7 @@
 -- =========================================================================
 -- ESQUEMA DO BANCO DE DADOS SUPABASE (POSTGRESQL) - SEMINÁRIO TEOLÓGICO ALIANÇA (SETA)
 -- Copie e cole este script completo no "SQL Editor" do seu painel Supabase
--- e clique em "RUN".
+-- e clique no botão verde "RUN" (Executar).
 -- =========================================================================
 
 -- 1. Tabela de Usuários (Alunos, Professores e Administradores)
@@ -22,12 +22,12 @@ CREATE TABLE IF NOT EXISTS seta_users (
 ALTER TABLE seta_users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT 'seta123';
 ALTER TABLE seta_users ADD COLUMN IF NOT EXISTS course TEXT DEFAULT 'Bacharel em Teologia';
 
--- 2. Tabela de Disciplinas e Critérios de Soma de Pontos (Bacharel em Teologia)
+-- 2. Tabela de Disciplinas e Critérios de Soma de Pontos
 CREATE TABLE IF NOT EXISTS seta_disciplines (
   id TEXT PRIMARY KEY,
   code TEXT NOT NULL,
   name TEXT NOT NULL,
-  professor_id TEXT NOT NULL REFERENCES seta_users(id) ON DELETE CASCADE,
+  professor_id TEXT NOT NULL,
   course TEXT NOT NULL DEFAULT 'Bacharel em Teologia',
   workload INT NOT NULL DEFAULT 60,
   schedule TEXT,
@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS seta_disciplines (
 
 -- 3. Tabela de Notas e Faltas (Pontuação Somada com corte mínimo de 7,0 pts)
 CREATE TABLE IF NOT EXISTS seta_grades (
-  discipline_id TEXT NOT NULL REFERENCES seta_disciplines(id) ON DELETE CASCADE,
-  student_id TEXT NOT NULL REFERENCES seta_users(id) ON DELETE CASCADE,
+  discipline_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
   scores JSONB NOT NULL DEFAULT '{}'::jsonb,
   recovery NUMERIC,
   absences INT NOT NULL DEFAULT 0,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS seta_grades (
 -- 4. Tabela de Trabalhos e Atividades Acadêmicas
 CREATE TABLE IF NOT EXISTS seta_assignments (
   id TEXT PRIMARY KEY,
-  discipline_id TEXT NOT NULL REFERENCES seta_disciplines(id) ON DELETE CASCADE,
+  discipline_id TEXT NOT NULL,
   evaluation_id TEXT,
   title TEXT NOT NULL,
   description TEXT,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS seta_assignments (
 -- 5. Tabela de Aulas, Videoaulas e Apostilas
 CREATE TABLE IF NOT EXISTS seta_lessons (
   id TEXT PRIMARY KEY,
-  discipline_id TEXT NOT NULL REFERENCES seta_disciplines(id) ON DELETE CASCADE,
+  discipline_id TEXT NOT NULL,
   module TEXT NOT NULL,
   title TEXT NOT NULL,
   date TEXT NOT NULL,
@@ -89,8 +89,12 @@ CREATE TABLE IF NOT EXISTS seta_announcements (
 );
 
 -- =========================================================================
--- HABILITAR POLÍTICAS DE ACESSO (RLS - Permissões Públicas para a Aplicação)
+-- PERMISSÕES E POLÍTICAS DE ACESSO LIVRE (RLS PARA ANON E AUTHENTICATED)
 -- =========================================================================
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
 ALTER TABLE seta_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_disciplines ENABLE ROW LEVEL SECURITY;
@@ -99,29 +103,28 @@ ALTER TABLE seta_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_announcements ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Acesso aos usuários do SETA" ON seta_users;
-CREATE POLICY "Acesso aos usuários do SETA" ON seta_users FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access seta_users" ON seta_users;
+CREATE POLICY "Public access seta_users" ON seta_users FOR ALL TO public USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Acesso às disciplinas do SETA" ON seta_disciplines;
-CREATE POLICY "Acesso às disciplinas do SETA" ON seta_disciplines FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access seta_disciplines" ON seta_disciplines;
+CREATE POLICY "Public access seta_disciplines" ON seta_disciplines FOR ALL TO public USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Acesso às notas do SETA" ON seta_grades;
-CREATE POLICY "Acesso às notas do SETA" ON seta_grades FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access seta_grades" ON seta_grades;
+CREATE POLICY "Public access seta_grades" ON seta_grades FOR ALL TO public USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Acesso aos trabalhos do SETA" ON seta_assignments;
-CREATE POLICY "Acesso aos trabalhos do SETA" ON seta_assignments FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access seta_assignments" ON seta_assignments;
+CREATE POLICY "Public access seta_assignments" ON seta_assignments FOR ALL TO public USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Acesso às aulas do SETA" ON seta_lessons;
-CREATE POLICY "Acesso às aulas do SETA" ON seta_lessons FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access seta_lessons" ON seta_lessons;
+CREATE POLICY "Public access seta_lessons" ON seta_lessons FOR ALL TO public USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Acesso aos avisos do SETA" ON seta_announcements;
-CREATE POLICY "Acesso aos avisos do SETA" ON seta_announcements FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access seta_announcements" ON seta_announcements;
+CREATE POLICY "Public access seta_announcements" ON seta_announcements FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- =========================================================================
--- CARGA INICIAL: APENAS O USUÁRIO DA DIREÇÃO (SEM DADOS FICTÍCIOS)
+-- CARGA INICIAL: APENAS O USUÁRIO DA DIREÇÃO
 -- =========================================================================
 
--- Inserir / Atualizar o perfil oficial da Direção
 INSERT INTO seta_users (id, name, email, password, role, title, course, year) VALUES
   ('adm-1', 'Direção Geral do SETA', 'admin@seta.com', 'setaadmin987', 'admin', 'Direção', 'Bacharel em Teologia', NULL)
 ON CONFLICT (id) DO UPDATE SET
@@ -129,7 +132,6 @@ ON CONFLICT (id) DO UPDATE SET
   email = EXCLUDED.email,
   password = EXCLUDED.password;
 
--- Aviso inicial do mural
 INSERT INTO seta_announcements (id, date, author, title, content, important) VALUES
   ('ann-init', to_char(now(), 'YYYY-MM-DD'), 'Direção Geral', 'Ambiente Acadêmico SETA Oficial',
    'Plataforma oficial ativa. Cadastre os professores, os alunos e as matérias do Bacharel em Teologia no painel da Direção.', true)

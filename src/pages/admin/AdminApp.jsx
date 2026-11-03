@@ -21,7 +21,8 @@ import {
   Trash2,
   UserPlus,
   Key,
-  Pencil
+  Pencil,
+  Database
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
@@ -47,7 +48,7 @@ import {
   EmptyState
 } from '../../components/ui';
 
-export function AdminApp() {
+export function AdminApp({ onOpenSupabaseConfig }) {
   const { 
     data, 
     setGradesClosed, 
@@ -58,6 +59,9 @@ export function AdminApp() {
     addDiscipline, 
     updateDiscipline,
     deleteDiscipline,
+    isSupabaseConfigured,
+    syncStatus,
+    lastSyncError,
   } = useStore();
 
   const [page, setPage] = useState('visao_geral');
@@ -103,6 +107,10 @@ export function AdminApp() {
           students={data.students}
           allStats={allStats}
           closedDiariesCount={closedDiariesCount}
+          isSupabaseConfigured={isSupabaseConfigured}
+          syncStatus={syncStatus}
+          lastSyncError={lastSyncError}
+          onOpenSupabaseConfig={onOpenSupabaseConfig}
           onSelectDiscipline={(id) => {
             setSelectedDiscId(id);
             setPage('disciplinas');
@@ -209,13 +217,66 @@ export function AdminApp() {
   );
 }
 
-function AdminOverview({ institution, disciplines, professors, students, allStats, closedDiariesCount, onSelectDiscipline }) {
+function AdminOverview({ 
+  institution, 
+  disciplines, 
+  professors, 
+  students, 
+  allStats, 
+  closedDiariesCount, 
+  isSupabaseConfigured,
+  syncStatus,
+  lastSyncError,
+  onOpenSupabaseConfig,
+  onSelectDiscipline 
+}) {
   return (
     <>
       <PageHeader
         title="Painel Institucional da Direção"
         subtitle={`${institution.name} · Curso de Bacharel em Teologia · Período ${institution.period}`}
+        actions={
+          <Button variant="secondary" size="sm" onClick={onOpenSupabaseConfig} title="Configuração do Banco Supabase">
+            <Database className="h-3.5 w-3.5" />
+            <span>Banco de Dados</span>
+            <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+          </Button>
+        }
       />
+
+      {/* Alerta se o Supabase não estiver configurado neste navegador */}
+      {!isSupabaseConfigured && (
+        <div className="mb-6 p-4 rounded-2xl border border-amber-300 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <strong className="font-semibold flex items-center gap-1.5 text-sm">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" /> Supabase Não Conectado neste Navegador
+            </strong>
+            <p className="text-amber-800 dark:text-amber-300">
+              Você está salvando no cache local deste computador. Para salvar na nuvem e abrir em qualquer outro navegador ou celular, conecte o Supabase abaixo ou ative as variáveis no Vercel.
+            </p>
+          </div>
+          <Button size="sm" onClick={onOpenSupabaseConfig} className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white border-none">
+            <Database className="h-3.5 w-3.5" /> Conectar Supabase
+          </Button>
+        </div>
+      )}
+
+      {/* Alerta se ocorreu erro ao sincronizar */}
+      {lastSyncError && (
+        <div className="mb-6 p-4 rounded-2xl border border-rose-300 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <strong className="font-semibold flex items-center gap-1.5 text-sm">
+              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" /> Aviso de Sincronização do Banco
+            </strong>
+            <p className="text-rose-800 dark:text-rose-300">
+              {lastSyncError}. Certifique-se de ter executado o script <strong>supabase_schema.sql</strong> no SQL Editor do Supabase para criar as tabelas.
+            </p>
+          </div>
+          <Button size="sm" variant="secondary" onClick={onOpenSupabaseConfig} className="shrink-0">
+            Ver Detalhes
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Stat label="Total de Alunos" value={students.length} hint="Corpo discente cadastrado" />
