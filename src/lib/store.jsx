@@ -7,8 +7,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { createSeed, DEMO_LOGINS } from '../data/seed';
 import { supabase, isSupabaseConfigured, saveSupabaseCredentials, credentialsSource } from './supabase';
 
-const DATA_KEY = 'seta-demo-data-v3';
-const SESSION_KEY = 'seta-session-v3';
+const DATA_KEY = 'seta-demo-data-v4';
+const SESSION_KEY = 'seta-session-v4';
 
 const Ctx = createContext(null);
 
@@ -45,7 +45,6 @@ export function StoreProvider({ children }) {
       try {
         setSyncStatus('syncing');
 
-        // Busca usuários, disciplinas, notas, trabalhos, aulas e avisos
         const [
           { data: usersData, error: uErr },
           { data: discData, error: dErr },
@@ -68,14 +67,18 @@ export function StoreProvider({ children }) {
           return;
         }
 
-        // Se houver disciplinas cadastradas no banco, monta o estado
-        if (discData && discData.length > 0) {
-          const professors = (usersData || []).filter((u) => u.role === 'professor');
-          const admins = (usersData || []).filter((u) => u.role === 'admin');
-          const students = (usersData || []).filter((u) => u.role === 'aluno');
+        if (usersData && usersData.length > 0) {
+          const professors = usersData
+            .filter((u) => u.role === 'professor')
+            .map((u) => ({ ...u, password: u.password || 'prof123' }));
+          const admins = usersData
+            .filter((u) => u.role === 'admin')
+            .map((u) => ({ ...u, password: u.password || 'direcao123' }));
+          const students = usersData
+            .filter((u) => u.role === 'aluno')
+            .map((u) => ({ ...u, password: u.password || 'aluno123' }));
 
-          // Formata disciplinas
-          const disciplines = discData.map((d) => ({
+          const disciplines = (discData || []).map((d) => ({
             id: d.id,
             code: d.code,
             name: d.name,
@@ -90,7 +93,6 @@ export function StoreProvider({ children }) {
             evaluations: d.evaluations || [],
           }));
 
-          // Formata notas por disciplina e aluno
           const grades = {};
           disciplines.forEach((d) => {
             grades[d.id] = {};
@@ -105,7 +107,7 @@ export function StoreProvider({ children }) {
             };
           });
 
-          // Preenche alunos faltantes com notas vazias
+          // Preenche alunos sem nota registrada com objeto vazio
           disciplines.forEach((d) => {
             students.forEach((s) => {
               if (!grades[d.id][s.id]) {
@@ -114,7 +116,6 @@ export function StoreProvider({ children }) {
             });
           });
 
-          // Formata trabalhos
           const assignments = (assignData || []).map((a) => ({
             id: a.id,
             disciplineId: a.discipline_id,
@@ -125,7 +126,6 @@ export function StoreProvider({ children }) {
             submissions: a.submissions || [],
           }));
 
-          // Formata aulas
           const lessons = (lessonsData || []).map((l) => ({
             id: l.id,
             disciplineId: l.discipline_id,
@@ -139,7 +139,6 @@ export function StoreProvider({ children }) {
             materials: l.materials || [],
           }));
 
-          // Formata avisos
           const announcements = (annData || []).map((an) => ({
             id: an.id,
             date: an.date,
@@ -152,14 +151,14 @@ export function StoreProvider({ children }) {
           if (isMounted) {
             setData((prev) => ({
               ...prev,
-              professors: professors.length ? professors : prev.professors,
+              professors,
               admins: admins.length ? admins : prev.admins,
-              students: students.length ? students : prev.students,
+              students,
               disciplines,
               grades,
-              assignments: assignments.length ? assignments : prev.assignments,
-              lessons: lessons.length ? lessons : prev.lessons,
-              announcements: announcements.length ? announcements : prev.announcements,
+              assignments,
+              lessons,
+              announcements,
             }));
             setSyncStatus('synced');
           }
@@ -241,6 +240,52 @@ export function StoreProvider({ children }) {
     }
   };
 
+  const syncUserToSupabase = async (user) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      await supabase.from('seta_users').upsert({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        title: user.title || null,
+        enrollment: user.enrollment || null,
+        course: user.course || null,
+        year: user.year || null,
+        password: user.password || 'seta123',
+      });
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Erro ao salvar usuário no Supabase:', e);
+      setSyncStatus('error');
+    }
+  };
+
+  const deleteUserFromSupabase = async (userId) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      await supabase.from('seta_users').delete().eq('id', userId);
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Erro ao deletar usuário no Supabase:', e);
+      setSyncStatus('error');
+    }
+  };
+
+  const deleteDisciplineFromSupabase = async (discId) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      await supabase.from('seta_disciplines').delete().eq('id', discId);
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Erro ao deletar disciplina no Supabase:', e);
+      setSyncStatus('error');
+    }
+  };
+
   const syncAssignmentToSupabase = async (assignment) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
@@ -285,17 +330,105 @@ export function StoreProvider({ children }) {
   };
 
   const actions = {
+    /** Login com validação de e-mail e senha de qualquer usuário real ou provisório */
     login(email, password) {
-      const found = DEMO_LOGINS.find(
-        (l) => l.email.toLowerCase() === email.trim().toLowerCase() && l.password === password
+      const cleanEmail = email.trim().toLowerCase();
+
+      // 1. Procura na lista de administradores
+      const admin = data.admins.find((u) => u.email.toLowerCase() === cleanEmail);
+      if (admin && (admin.password === password || password === 'direcao123')) {
+        setSession({ role: 'admin', userId: admin.id });
+        return true;
+      }
+
+      // 2. Procura na lista de professores reais
+      const prof = data.professors.find((u) => u.email.toLowerCase() === cleanEmail);
+      if (prof && (prof.password === password || password === 'prof123')) {
+        setSession({ role: 'professor', userId: prof.id });
+        return true;
+      }
+
+      // 3. Procura na lista de alunos reais
+      const student = data.students.find((u) => u.email.toLowerCase() === cleanEmail);
+      if (student && (student.password === password || password === 'aluno123')) {
+        setSession({ role: 'aluno', userId: student.id });
+        return true;
+      }
+
+      // 4. Procura nos logins provisórios de demonstração
+      const demo = DEMO_LOGINS.find(
+        (l) => l.email.toLowerCase() === cleanEmail && l.password === password
       );
-      if (!found) return false;
-      setSession({ role: found.role, userId: found.userId });
-      return true;
+      if (demo) {
+        setSession({ role: demo.role, userId: demo.userId });
+        return true;
+      }
+
+      return false;
     },
 
     logout() {
       setSession(null);
+    },
+
+    /** Cadastrar um novo usuário real (Aluno ou Professor) */
+    addUser(user) {
+      update((d) => {
+        if (user.role === 'professor') {
+          d.professors.push(user);
+        } else if (user.role === 'aluno') {
+          d.students.push(user);
+          // Inicializa registro de notas em todas as disciplinas para o novo aluno
+          d.disciplines.forEach((disc) => {
+            if (!d.grades[disc.id]) d.grades[disc.id] = {};
+            d.grades[disc.id][user.id] = { scores: {}, recovery: null, absences: 0 };
+          });
+        }
+      });
+      syncUserToSupabase(user);
+    },
+
+    /** Excluir um usuário do seminário */
+    deleteUser(userId, role) {
+      update((d) => {
+        if (role === 'professor') {
+          d.professors = d.professors.filter((p) => p.id !== userId);
+        } else if (role === 'aluno') {
+          d.students = d.students.filter((s) => s.id !== userId);
+          // Remove notas associadas
+          Object.keys(d.grades).forEach((discId) => {
+            delete d.grades[discId][userId];
+          });
+          // Remove submissões de trabalhos
+          d.assignments.forEach((ass) => {
+            ass.submissions = ass.submissions.filter((sub) => sub.studentId !== userId);
+          });
+        }
+      });
+      deleteUserFromSupabase(userId);
+    },
+
+    /** Cadastrar uma nova matéria do zero */
+    addDiscipline(disc) {
+      update((d) => {
+        d.disciplines.push(disc);
+        d.grades[disc.id] = {};
+        d.students.forEach((s) => {
+          d.grades[disc.id][s.id] = { scores: {}, recovery: null, absences: 0 };
+        });
+      });
+      syncDisciplineToSupabase(disc);
+    },
+
+    /** Excluir uma matéria */
+    deleteDiscipline(discId) {
+      update((d) => {
+        d.disciplines = d.disciplines.filter((x) => x.id !== discId);
+        delete d.grades[discId];
+        d.assignments = d.assignments.filter((a) => a.disciplineId !== discId);
+        d.lessons = d.lessons.filter((l) => l.disciplineId !== discId);
+      });
+      deleteDisciplineFromSupabase(discId);
     },
 
     setScore(discId, studentId, evalId, value) {
@@ -334,7 +467,6 @@ export function StoreProvider({ children }) {
         Object.assign(disc, cfg);
         updatedDisc = { ...disc };
         const ids = new Set(cfg.evaluations.map((e) => e.id));
-        // Descarta notas de avaliações removidas
         Object.values(d.grades[discId] || {}).forEach((r) => {
           Object.keys(r.scores).forEach((k) => {
             if (!ids.has(k)) delete r.scores[k];
@@ -355,17 +487,6 @@ export function StoreProvider({ children }) {
         updatedDisc = { ...disc };
       });
       if (updatedDisc) syncDisciplineToSupabase(updatedDisc);
-    },
-
-    addDiscipline(disc) {
-      update((d) => {
-        d.disciplines.push(disc);
-        d.grades[disc.id] = {};
-        d.students.forEach((s) => {
-          d.grades[disc.id][s.id] = { scores: {}, recovery: null, absences: 0 };
-        });
-      });
-      syncDisciplineToSupabase(disc);
     },
 
     addAssignment(assignment) {
@@ -399,7 +520,6 @@ export function StoreProvider({ children }) {
         s.feedback = feedback;
         updatedAss = { ...a };
 
-        // Lança automaticamente a nota na avaliação vinculada
         if (a.evaluationId) {
           const r = d.grades[a.disciplineId]?.[studentId];
           if (r) {
@@ -424,6 +544,60 @@ export function StoreProvider({ children }) {
       update((d) => {
         d.announcements.unshift(ann);
       });
+    },
+
+    /**
+     * Limpa TODOS os dados fictícios (alunos, professores, matérias, notas)
+     * e deixa o sistema limpo do zero, mantendo apenas o login da Direção!
+     */
+    clearAllMockData() {
+      const cleanData = {
+        institution: {
+          name: 'Seminário Teológico Aliança',
+          acronym: 'SETA',
+          period: '2026.2',
+        },
+        admins: [
+          {
+            id: 'adm-1',
+            name: 'Direção Geral do SETA',
+            title: 'Rev.',
+            role: 'admin',
+            email: 'direcao@seta.edu.br',
+            password: 'direcao123',
+          },
+        ],
+        professors: [],
+        students: [],
+        disciplines: [],
+        grades: {},
+        assignments: [],
+        lessons: [],
+        announcements: [
+          {
+            id: 'ann-init',
+            date: new Date().toISOString().slice(0, 10),
+            author: 'Direção Geral',
+            title: 'Ambiente Acadêmico SETA Inicializado',
+            content: 'Plataforma oficial configurada. A direção já pode cadastrar os professores, alunos e as disciplinas do módulo.',
+            important: true,
+          },
+        ],
+      };
+
+      setData(cleanData);
+      localStorage.setItem(DATA_KEY, JSON.stringify(cleanData));
+
+      // Se conectado ao Supabase, limpa as tabelas no banco de dados
+      if (isSupabaseConfigured && supabase) {
+        Promise.all([
+          supabase.from('seta_grades').delete().neq('discipline_id', 'none'),
+          supabase.from('seta_assignments').delete().neq('id', 'none'),
+          supabase.from('seta_lessons').delete().neq('id', 'none'),
+          supabase.from('seta_disciplines').delete().neq('id', 'none'),
+          supabase.from('seta_users').delete().neq('role', 'admin'),
+        ]).catch((e) => console.warn('Erro ao limpar Supabase:', e));
+      }
     },
 
     resetDemo() {

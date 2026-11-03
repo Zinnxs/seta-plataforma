@@ -16,7 +16,13 @@ import {
   ShieldCheck,
   Download,
   SlidersHorizontal,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  Trash2,
+  UserPlus,
+  Key,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
@@ -24,6 +30,8 @@ import { disciplineStats, computeResult } from '../../lib/grades';
 import { fmtGrade, personName } from '../../lib/format';
 import { GradesTable } from '../../components/GradesTable';
 import { EvaluationConfig } from '../../components/EvaluationConfig';
+import { NewUserModal } from '../../components/Modals/NewUserModal';
+import { NewDisciplineAdminModal } from '../../components/Modals/NewDisciplineAdminModal';
 import { 
   Badge, 
   Button, 
@@ -33,14 +41,35 @@ import {
   PageHeader, 
   Stat, 
   Tabs,
-  Callout 
+  Callout,
+  Avatar,
+  ConfirmDialog,
+  EmptyState
 } from '../../components/ui';
 
 export function AdminApp() {
-  const { data, setGradesClosed, saveDisciplineConfig } = useStore();
+  const { 
+    data, 
+    setGradesClosed, 
+    saveDisciplineConfig, 
+    addUser, 
+    deleteUser, 
+    addDiscipline, 
+    deleteDiscipline,
+    clearAllMockData,
+    resetDemo
+  } = useStore();
+
   const [page, setPage] = useState('visao_geral');
   const [selectedDiscId, setSelectedDiscId] = useState(data.disciplines[0]?.id);
   const [adminTab, setAdminTab] = useState('notas'); // 'notas' | 'criterios'
+
+  // Modais de Criação
+  const [newUserModalOpen, setNewUserModalOpen] = useState(false);
+  const [newUserDefaultRole, setNewUserDefaultRole] = useState('aluno');
+  const [newDisciplineModalOpen, setNewDisciplineModalOpen] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
   const selectedDiscipline = data.disciplines.find(d => d.id === selectedDiscId) || data.disciplines[0];
 
@@ -55,7 +84,8 @@ export function AdminApp() {
 
   const nav = [
     { id: 'visao_geral', label: 'Visão geral', icon: Building2 },
-    { id: 'disciplinas', label: 'Diários e matérias', icon: BookOpen },
+    { id: 'usuarios', label: 'Alunos e Professores', icon: Users, count: data.students.length + data.professors.length },
+    { id: 'disciplinas', label: 'Diários e matérias', icon: BookOpen, count: data.disciplines.length },
     { id: 'recuperacao', label: 'Alunos em recuperação', icon: AlertTriangle, count: totalRecoveryCount },
     { id: 'infra_proposta', label: 'Custos e Servidor NAS', icon: Server },
   ];
@@ -74,6 +104,20 @@ export function AdminApp() {
             setSelectedDiscId(id);
             setPage('disciplinas');
           }}
+          onOpenClear={() => setConfirmClearOpen(true)}
+          onOpenReset={() => setConfirmResetOpen(true)}
+        />
+      )}
+
+      {page === 'usuarios' && (
+        <AdminUsersView
+          students={data.students}
+          professors={data.professors}
+          onOpenNewUser={(role) => {
+            setNewUserDefaultRole(role);
+            setNewUserModalOpen(true);
+          }}
+          onDeleteUser={deleteUser}
         />
       )}
 
@@ -84,7 +128,15 @@ export function AdminApp() {
           professors={data.professors}
           onChangeDiscipline={setSelectedDiscId}
           onToggleClosed={(id, closed) => setGradesClosed(id, closed)}
-          onSaveConfig={(cfg) => saveDisciplineConfig(selectedDiscipline.id, cfg)}
+          onSaveConfig={(cfg) => saveDisciplineConfig(selectedDiscipline?.id, cfg)}
+          onOpenNewDiscipline={() => setNewDisciplineModalOpen(true)}
+          onDeleteDiscipline={(id) => {
+            deleteDiscipline(id);
+            if (data.disciplines.length > 1) {
+              const remaining = data.disciplines.filter(d => d.id !== id);
+              setSelectedDiscId(remaining[0]?.id);
+            }
+          }}
           tab={adminTab}
           setTab={setAdminTab}
         />
@@ -102,87 +154,325 @@ export function AdminApp() {
       {page === 'infra_proposta' && (
         <AdminInfrastructureView />
       )}
+
+      {/* Modal de Cadastro de Aluno/Professor */}
+      <NewUserModal
+        open={newUserModalOpen}
+        onClose={() => setNewUserModalOpen(false)}
+        defaultRole={newUserDefaultRole}
+        onSave={(user) => {
+          addUser(user);
+        }}
+      />
+
+      {/* Modal de Nova Matéria do Zero */}
+      <NewDisciplineAdminModal
+        open={newDisciplineModalOpen}
+        onClose={() => setNewDisciplineModalOpen(false)}
+        professors={data.professors}
+        onSave={(disc) => {
+          addDiscipline(disc);
+          setSelectedDiscId(disc.id);
+        }}
+      />
+
+      {/* Confirmação para Limpar Dados de Teste */}
+      <ConfirmDialog
+        open={confirmClearOpen}
+        onClose={() => setConfirmClearOpen(false)}
+        title="Começar o Seminário do Zero?"
+        text="Esta ação removerá todos os alunos, professores, notas e matérias de exemplo do sistema (e do banco Supabase se estiver conectado), deixando a plataforma 100% limpa para você cadastrar as pessoas reais. Deseja continuar?"
+        confirmLabel="Sim, limpar e começar do zero"
+        danger
+        onConfirm={() => {
+          clearAllMockData();
+        }}
+      />
+
+      {/* Confirmação para Restaurar Demonstração */}
+      <ConfirmDialog
+        open={confirmResetOpen}
+        onClose={() => setConfirmResetOpen(false)}
+        title="Restaurar dados de exemplo?"
+        text="Esta ação recarregará os dados de teste fictícios com os alunos e matérias demonstrativas. Deseja continuar?"
+        confirmLabel="Restaurar exemplo"
+        onConfirm={() => {
+          resetDemo();
+        }}
+      />
     </Layout>
   );
 }
 
-function AdminOverview({ institution, disciplines, professors, students, allStats, closedDiariesCount, onSelectDiscipline }) {
+function AdminOverview({ institution, disciplines, professors, students, allStats, closedDiariesCount, onSelectDiscipline, onOpenClear, onOpenReset }) {
   return (
     <>
       <PageHeader
         title="Painel Institucional da Direção"
         subtitle={`${institution.name} · Período Letivo ${institution.period}`}
         actions={
-          <Button variant="secondary" onClick={() => alert("Simulação: Gerando relatório acadêmico semestral completo em PDF...")}>
-            <Download className="h-4 w-4" /> Relatório semestral
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={onOpenReset} title="Recarregar dados de demonstração">
+              <RotateCcw className="h-3.5 w-3.5" /> Restaurar Testes
+            </Button>
+            <Button variant="danger" size="sm" onClick={onOpenClear} title="Esvaziar banco e começar 100% oficial do zero">
+              <Trash2 className="h-3.5 w-3.5" /> Iniciar do Zero (Limpar Testes)
+            </Button>
+          </div>
         }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Stat label="Total de Alunos" value={students.length} hint="Corpo discente ativo" />
-        <Stat label="Professores" value={professors.length} hint="Corpo docente titulado" />
-        <Stat label="Diários Fechados" value={`${closedDiariesCount} / ${disciplines.length}`} hint="Enviados à secretaria" />
+        <Stat label="Total de Alunos" value={students.length} hint="Corpo discente cadastrado" />
+        <Stat label="Professores" value={professors.length} hint="Corpo docente ativo" />
+        <Stat label="Matérias Cadastradas" value={disciplines.length} hint={`${closedDiariesCount} diários fechados`} />
         <Stat 
           label="Em Recuperação" 
           value={allStats.reduce((acc, curr) => acc + curr.stats.recovery, 0)} 
-          hint="Acompanhamento pastoral" 
+          hint="Pontuação somada < 7,0" 
         />
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Status dos Diários por Disciplina</h3>
-        <Card className="divide-y divide-stone-100 dark:divide-stone-800">
-          {allStats.map(({ discipline, stats }) => {
-            const prof = professors.find(p => p.id === discipline.professorId);
-            return (
-              <div 
-                key={discipline.id} 
-                onClick={() => onSelectDiscipline(discipline.id)}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-stone-50/60 dark:hover:bg-stone-800/30 cursor-pointer transition gap-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{discipline.code}</span>
-                    <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{discipline.name}</h4>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Status dos Diários por Disciplina</h3>
+          <span className="text-xs text-stone-400">Clique na disciplina para auditar notas ou alterar critérios</span>
+        </div>
+
+        {allStats.length === 0 ? (
+          <Card>
+            <EmptyState 
+              icon={BookOpen} 
+              title="Nenhuma disciplina cadastrada" 
+              text="O banco está limpo. Acesse a aba 'Diários e matérias' para cadastrar as matérias reais do seminário." 
+            />
+          </Card>
+        ) : (
+          <Card className="divide-y divide-stone-100 dark:divide-stone-800">
+            {allStats.map(({ discipline, stats }) => {
+              const prof = professors.find(p => p.id === discipline.professorId);
+              return (
+                <div 
+                  key={discipline.id} 
+                  onClick={() => onSelectDiscipline(discipline.id)}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-stone-50/60 dark:hover:bg-stone-800/30 cursor-pointer transition gap-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{discipline.code}</span>
+                      <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{discipline.name}</h4>
+                    </div>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                      Docente: {personName(prof)} · {discipline.schedule}
+                    </p>
                   </div>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    Docente: {personName(prof)} · {discipline.schedule}
-                  </p>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-right text-xs">
+                      <span className="text-stone-400 block">Pontuação Média</span>
+                      <span className="text-sm font-bold tabular-nums text-stone-900 dark:text-stone-50">{fmtGrade(stats.average)}</span>
+                    </div>
+
+                    <div className="text-right text-xs">
+                      <span className="text-stone-400 block">Recuperação</span>
+                      <span className={`text-sm font-bold tabular-nums ${stats.recovery > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-stone-500'}`}>
+                        {stats.recovery}
+                      </span>
+                    </div>
+
+                    {discipline.gradesClosed ? (
+                      <Badge tone="green">Fechado</Badge>
+                    ) : (
+                      <Badge tone="amber">Aberto</Badge>
+                    )}
+
+                    <ChevronRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right text-xs">
-                    <span className="text-stone-400 block">Pontuação Média</span>
-                    <span className="text-sm font-bold tabular-nums text-stone-900 dark:text-stone-50">{fmtGrade(stats.average)}</span>
-                  </div>
-
-                  <div className="text-right text-xs">
-                    <span className="text-stone-400 block">Recuperação</span>
-                    <span className={`text-sm font-bold tabular-nums ${stats.recovery > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-stone-500'}`}>
-                      {stats.recovery}
-                    </span>
-                  </div>
-
-                  {discipline.gradesClosed ? (
-                    <Badge tone="green">Fechado</Badge>
-                  ) : (
-                    <Badge tone="amber">Aberto</Badge>
-                  )}
-
-                  <ChevronRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
-                </div>
-              </div>
-            );
-          })}
-        </Card>
+              );
+            })}
+          </Card>
+        )}
       </div>
     </>
   );
 }
 
-function AdminDisciplinesView({ discipline, disciplines, professors, onChangeDiscipline, onToggleClosed, onSaveConfig, tab, setTab }) {
-  const prof = professors.find(p => p.id === discipline.professorId);
+function AdminUsersView({ students, professors, onOpenNewUser, onDeleteUser }) {
+  const [tab, setTab] = useState('professores'); // 'professores' | 'alunos'
+
+  return (
+    <>
+      <PageHeader
+        title="Gerenciamento de Alunos e Professores"
+        subtitle="Cadastre os usuários reais do seminário com e-mails institucionais e senhas de acesso."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={() => onOpenNewUser('professor')}>
+              <UserPlus className="h-4 w-4" /> Novo Professor
+            </Button>
+            <Button size="sm" onClick={() => onOpenNewUser('aluno')}>
+              <UserPlus className="h-4 w-4" /> Novo Aluno
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="mb-6">
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { id: 'professores', label: 'Corpo Docente (Professores)', count: professors.length },
+            { id: 'alunos', label: 'Corpo Discente (Alunos)', count: students.length },
+          ]}
+        />
+      </div>
+
+      {tab === 'professores' && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex justify-between items-center bg-stone-50/50 dark:bg-stone-900/40 text-xs">
+            <span className="text-stone-500 font-medium">Professores cadastrados com permissão de lançar notas e diários</span>
+            <Button size="sm" onClick={() => onOpenNewUser('professor')}>
+              <Plus className="h-3.5 w-3.5" /> Cadastrar Professor
+            </Button>
+          </div>
+
+          {professors.length === 0 ? (
+            <EmptyState icon={Users} title="Nenhum professor cadastrado" text="Clique no botão acima para cadastrar o primeiro professor." />
+          ) : (
+            <div className="divide-y divide-stone-100 dark:divide-stone-800">
+              {professors.map((p) => (
+                <div key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={p.name} />
+                    <div>
+                      <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{personName(p)}</h4>
+                      <p className="text-xs text-stone-400 font-mono mt-0.5">{p.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-lg text-stone-600 dark:text-stone-300 font-mono flex items-center gap-1.5">
+                      <Key className="h-3 w-3 text-stone-400" />
+                      <span>Senha: {p.password || 'prof123'}</span>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-rose-500 hover:text-rose-700"
+                      onClick={() => {
+                        if (confirm(`Deseja remover o professor ${p.name}?`)) {
+                          onDeleteUser(p.id, 'professor');
+                        }
+                      }}
+                      title="Excluir professor"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {tab === 'alunos' && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex justify-between items-center bg-stone-50/50 dark:bg-stone-900/40 text-xs">
+            <span className="text-stone-500 font-medium">Alunos matriculados com acesso ao boletim e envio de tarefas</span>
+            <Button size="sm" onClick={() => onOpenNewUser('aluno')}>
+              <Plus className="h-3.5 w-3.5" /> Cadastrar Aluno
+            </Button>
+          </div>
+
+          {students.length === 0 ? (
+            <EmptyState icon={GraduationCap} title="Nenhum aluno cadastrado" text="Clique no botão acima para cadastrar o primeiro aluno." />
+          ) : (
+            <div className="divide-y divide-stone-100 dark:divide-stone-800">
+              {students.map((s) => (
+                <div key={s.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={s.name} />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{s.name}</h4>
+                        <span className="text-xs text-brand-600 dark:text-brand-400 font-bold font-mono">({s.enrollment})</span>
+                      </div>
+                      <p className="text-xs text-stone-400 mt-0.5">
+                        {s.course} · <span className="font-mono">{s.email}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-lg text-stone-600 dark:text-stone-300 font-mono flex items-center gap-1.5">
+                      <Key className="h-3 w-3 text-stone-400" />
+                      <span>Senha: {s.password || 'aluno123'}</span>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-rose-500 hover:text-rose-700"
+                      onClick={() => {
+                        if (confirm(`Deseja remover o aluno ${s.name}?`)) {
+                          onDeleteUser(s.id, 'aluno');
+                        }
+                      }}
+                      title="Excluir aluno"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+    </>
+  );
+}
+
+function AdminDisciplinesView({ 
+  discipline, 
+  disciplines, 
+  professors, 
+  onChangeDiscipline, 
+  onToggleClosed, 
+  onSaveConfig, 
+  onOpenNewDiscipline,
+  onDeleteDiscipline,
+  tab, 
+  setTab 
+}) {
+  const prof = discipline ? professors.find(p => p.id === discipline.professorId) : null;
+
+  if (!discipline || disciplines.length === 0) {
+    return (
+      <>
+        <PageHeader
+          title="Gestão de Matérias e Diários"
+          subtitle="Nenhuma disciplina cadastrada no momento."
+          actions={
+            <Button onClick={onOpenNewDiscipline}>
+              <Plus className="h-4 w-4" /> Cadastrar Nova Matéria
+            </Button>
+          }
+        />
+        <Card>
+          <EmptyState 
+            icon={BookOpen} 
+            title="Nenhuma matéria encontrada" 
+            text="Clique no botão 'Cadastrar Nova Matéria' para criar a primeira disciplina oficial do seminário." 
+          />
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>
@@ -190,8 +480,11 @@ function AdminDisciplinesView({ discipline, disciplines, professors, onChangeDis
         title="Gestão da Disciplina"
         subtitle={`${discipline.code} · ${discipline.name} (Docente: ${personName(prof)})`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <DisciplineSelect disciplines={disciplines} value={discipline.id} onChange={onChangeDiscipline} />
+            <Button size="sm" onClick={onOpenNewDiscipline}>
+              <Plus className="h-3.5 w-3.5" /> Nova Matéria
+            </Button>
             {discipline.gradesClosed ? (
               <Button variant="secondary" size="sm" onClick={() => onToggleClosed(discipline.id, false)}>
                 <Unlock className="h-3.5 w-3.5" /> Reabrir diário
@@ -201,6 +494,18 @@ function AdminDisciplinesView({ discipline, disciplines, professors, onChangeDis
                 <Lock className="h-3.5 w-3.5" /> Encerrar diário
               </Button>
             )}
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                if (confirm(`Tem certeza que deseja excluir a matéria ${discipline.name}?`)) {
+                  onDeleteDiscipline(discipline.id);
+                }
+              }}
+              title="Excluir disciplina"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           </div>
         }
       />
@@ -322,7 +627,6 @@ function AdminInfrastructureView() {
       />
 
       <div className="space-y-6">
-        {/* Destaque sobre o Computador NAS */}
         <Card className="p-6 border-2 border-brand-300 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-950/20">
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-2xl bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300 shrink-0">
@@ -358,59 +662,6 @@ function AdminInfrastructureView() {
               </div>
             </div>
           </div>
-        </Card>
-
-        {/* Comparativo de Opções */}
-        <Card className="p-6 space-y-4">
-          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">Comparativo de Custos para Apresentação à Diretoria</h3>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-400">
-                  <th className="py-2.5 px-3">Modelo de Implantação</th>
-                  <th className="py-2.5 px-3">Banco de Dados</th>
-                  <th className="py-2.5 px-3">Armazenamento de Arquivos</th>
-                  <th className="py-2.5 px-3">Custo de Servidor</th>
-                  <th className="py-2.5 px-3 font-semibold">Custo Total / Mês</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 dark:divide-stone-800 text-stone-600 dark:text-stone-300">
-                <tr>
-                  <td className="py-3 px-3 font-semibold text-brand-700 dark:text-brand-300">Opção A: Nuvem Gratuita (Piloto)</td>
-                  <td className="py-3 px-3">Supabase (PostgreSQL Free)</td>
-                  <td className="py-3 px-3">Supabase Storage (1 GB)</td>
-                  <td className="py-3 px-3">Vercel (Free Tier)</td>
-                  <td className="py-3 px-3 font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00 / mês</td>
-                </tr>
-                <tr className="bg-brand-50/40 dark:bg-brand-900/10">
-                  <td className="py-3 px-3 font-semibold text-brand-700 dark:text-brand-300">Opção B: Servidor Local Próprio (PC NAS)</td>
-                  <td className="py-3 px-3">PostgreSQL no PC local</td>
-                  <td className="py-3 px-3">HD do PC local (1TB a 2TB)</td>
-                  <td className="py-3 px-3">PC do Seminário + Cloudflare Tunnel</td>
-                  <td className="py-3 px-3 font-bold text-emerald-600 dark:text-emerald-400">Apenas energia (~R$ 25/mês)</td>
-                </tr>
-                <tr>
-                  <td className="py-3 px-3 font-semibold text-stone-700 dark:text-stone-200">Opção C: Nuvem Pro (Escala Total)</td>
-                  <td className="py-3 px-3">Supabase Pro com backup diário</td>
-                  <td className="py-3 px-3">100 GB em nuvem dedicada</td>
-                  <td className="py-3 px-3">Hospedagem Gerenciada</td>
-                  <td className="py-3 px-3 font-semibold text-stone-800 dark:text-stone-100">~R$ 140,00 / mês</td>
-                </tr>
-                <tr className="text-stone-400">
-                  <td className="py-3 px-3 italic">Sistemas Comerciais Prontos de Mercado</td>
-                  <td className="py-3 px-3">Proprietário fechado</td>
-                  <td className="py-3 px-3">Limitado</td>
-                  <td className="py-3 px-3">Empresa terceira</td>
-                  <td className="py-3 px-3 font-bold text-rose-500">R$ 1.200 a R$ 2.500 / mês</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <p className="text-xs text-stone-400 dark:text-stone-500 pt-2">
-            * Em qualquer modelo, o único investimento fixo anual obrigatório é o registro do domínio próprio (ex: <code>seminarioseta.com.br</code> = R$ 40,00 ao ano no Registro.br).
-          </p>
         </Card>
       </div>
     </>

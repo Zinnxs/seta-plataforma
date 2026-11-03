@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS seta_users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL DEFAULT 'seta123',
   role TEXT NOT NULL CHECK (role IN ('aluno', 'professor', 'admin')),
   title TEXT,
   enrollment TEXT,
@@ -16,6 +17,9 @@ CREATE TABLE IF NOT EXISTS seta_users (
   year TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Garante que a coluna password exista caso a tabela já tenha sido criada anteriormente
+ALTER TABLE seta_users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT 'seta123';
 
 -- 2. Tabela de Disciplinas e Critérios de Soma de Pontos
 CREATE TABLE IF NOT EXISTS seta_disciplines (

@@ -102,9 +102,12 @@ export function Login() {
             <div className="mt-12">
               <div className="flex items-center gap-3 text-xs text-stone-400 dark:text-stone-500">
                 <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
-                Acessos provisórios
+                Acessos Rápidos de Demonstração
                 <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
               </div>
+              <p className="text-[11px] text-stone-400 dark:text-stone-500 text-center mt-1.5">
+                (Ou digite o e-mail e senha de qualquer aluno ou professor real criado pela Direção)
+              </p>
               <div className="mt-4 space-y-2">
                 {DEMO_LOGINS.map((l) => {
                   const Icon = ICONS[l.role];
