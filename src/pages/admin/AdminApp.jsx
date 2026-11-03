@@ -21,8 +21,7 @@ import {
   Trash2,
   UserPlus,
   Key,
-  RotateCcw,
-  Sparkles
+  Pencil
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
@@ -31,7 +30,9 @@ import { fmtGrade, personName } from '../../lib/format';
 import { GradesTable } from '../../components/GradesTable';
 import { EvaluationConfig } from '../../components/EvaluationConfig';
 import { NewUserModal } from '../../components/Modals/NewUserModal';
+import { EditUserModal } from '../../components/Modals/EditUserModal';
 import { NewDisciplineAdminModal } from '../../components/Modals/NewDisciplineAdminModal';
+import { EditDisciplineModal } from '../../components/Modals/EditDisciplineModal';
 import { 
   Badge, 
   Button, 
@@ -43,7 +44,6 @@ import {
   Tabs,
   Callout,
   Avatar,
-  ConfirmDialog,
   EmptyState
 } from '../../components/ui';
 
@@ -53,23 +53,26 @@ export function AdminApp() {
     setGradesClosed, 
     saveDisciplineConfig, 
     addUser, 
+    updateUser,
     deleteUser, 
     addDiscipline, 
+    updateDiscipline,
     deleteDiscipline,
-    clearAllMockData,
-    resetDemo
   } = useStore();
 
   const [page, setPage] = useState('visao_geral');
   const [selectedDiscId, setSelectedDiscId] = useState(data.disciplines[0]?.id);
   const [adminTab, setAdminTab] = useState('notas'); // 'notas' | 'criterios'
 
-  // Modais de Criação
+  // Modais de Criação e Edição
   const [newUserModalOpen, setNewUserModalOpen] = useState(false);
   const [newUserDefaultRole, setNewUserDefaultRole] = useState('aluno');
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false);
+  const [selectedUserToEdit, setSelectedUserToEdit] = useState(null);
+
   const [newDisciplineModalOpen, setNewDisciplineModalOpen] = useState(false);
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
-  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [editDisciplineModalOpen, setEditDisciplineModalOpen] = useState(false);
+  const [disciplineToEdit, setDisciplineToEdit] = useState(null);
 
   const selectedDiscipline = data.disciplines.find(d => d.id === selectedDiscId) || data.disciplines[0];
 
@@ -91,7 +94,7 @@ export function AdminApp() {
   ];
 
   return (
-    <Layout nav={nav} page={page} onNavigate={setPage} roleLabel="Direção & Secretaria">
+    <Layout nav={nav} page={page} onNavigate={setPage} roleLabel="Direção Geral">
       {page === 'visao_geral' && (
         <AdminOverview 
           institution={data.institution} 
@@ -104,8 +107,6 @@ export function AdminApp() {
             setSelectedDiscId(id);
             setPage('disciplinas');
           }}
-          onOpenClear={() => setConfirmClearOpen(true)}
-          onOpenReset={() => setConfirmResetOpen(true)}
         />
       )}
 
@@ -116,6 +117,10 @@ export function AdminApp() {
           onOpenNewUser={(role) => {
             setNewUserDefaultRole(role);
             setNewUserModalOpen(true);
+          }}
+          onEditUser={(user) => {
+            setSelectedUserToEdit(user);
+            setEditUserModalOpen(true);
           }}
           onDeleteUser={deleteUser}
         />
@@ -130,6 +135,10 @@ export function AdminApp() {
           onToggleClosed={(id, closed) => setGradesClosed(id, closed)}
           onSaveConfig={(cfg) => saveDisciplineConfig(selectedDiscipline?.id, cfg)}
           onOpenNewDiscipline={() => setNewDisciplineModalOpen(true)}
+          onOpenEditDiscipline={(disc) => {
+            setDisciplineToEdit(disc);
+            setEditDisciplineModalOpen(true);
+          }}
           onDeleteDiscipline={(id) => {
             deleteDiscipline(id);
             if (data.disciplines.length > 1) {
@@ -165,6 +174,16 @@ export function AdminApp() {
         }}
       />
 
+      {/* Modal de Edição de Aluno/Professor */}
+      <EditUserModal
+        open={editUserModalOpen}
+        onClose={() => setEditUserModalOpen(false)}
+        user={selectedUserToEdit}
+        onSave={(updatedUser) => {
+          updateUser(updatedUser);
+        }}
+      />
+
       {/* Modal de Nova Matéria do Zero */}
       <NewDisciplineAdminModal
         open={newDisciplineModalOpen}
@@ -176,50 +195,26 @@ export function AdminApp() {
         }}
       />
 
-      {/* Confirmação para Limpar Dados de Teste */}
-      <ConfirmDialog
-        open={confirmClearOpen}
-        onClose={() => setConfirmClearOpen(false)}
-        title="Começar o Seminário do Zero?"
-        text="Esta ação removerá todos os alunos, professores, notas e matérias de exemplo do sistema (e do banco Supabase se estiver conectado), deixando a plataforma 100% limpa para você cadastrar as pessoas reais. Deseja continuar?"
-        confirmLabel="Sim, limpar e começar do zero"
-        danger
-        onConfirm={() => {
-          clearAllMockData();
-        }}
-      />
-
-      {/* Confirmação para Restaurar Demonstração */}
-      <ConfirmDialog
-        open={confirmResetOpen}
-        onClose={() => setConfirmResetOpen(false)}
-        title="Restaurar dados de exemplo?"
-        text="Esta ação recarregará os dados de teste fictícios com os alunos e matérias demonstrativas. Deseja continuar?"
-        confirmLabel="Restaurar exemplo"
-        onConfirm={() => {
-          resetDemo();
+      {/* Modal de Edição de Matéria */}
+      <EditDisciplineModal
+        open={editDisciplineModalOpen}
+        onClose={() => setEditDisciplineModalOpen(false)}
+        discipline={disciplineToEdit || selectedDiscipline}
+        professors={data.professors}
+        onSave={(updatedDisc) => {
+          updateDiscipline(updatedDisc);
         }}
       />
     </Layout>
   );
 }
 
-function AdminOverview({ institution, disciplines, professors, students, allStats, closedDiariesCount, onSelectDiscipline, onOpenClear, onOpenReset }) {
+function AdminOverview({ institution, disciplines, professors, students, allStats, closedDiariesCount, onSelectDiscipline }) {
   return (
     <>
       <PageHeader
         title="Painel Institucional da Direção"
-        subtitle={`${institution.name} · Período Letivo ${institution.period}`}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={onOpenReset} title="Recarregar dados de demonstração">
-              <RotateCcw className="h-3.5 w-3.5" /> Restaurar Testes
-            </Button>
-            <Button variant="danger" size="sm" onClick={onOpenClear} title="Esvaziar banco e começar 100% oficial do zero">
-              <Trash2 className="h-3.5 w-3.5" /> Iniciar do Zero (Limpar Testes)
-            </Button>
-          </div>
-        }
+        subtitle={`${institution.name} · Curso de Bacharel em Teologia · Período ${institution.period}`}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -244,7 +239,7 @@ function AdminOverview({ institution, disciplines, professors, students, allStat
             <EmptyState 
               icon={BookOpen} 
               title="Nenhuma disciplina cadastrada" 
-              text="O banco está limpo. Acesse a aba 'Diários e matérias' para cadastrar as matérias reais do seminário." 
+              text="Acesse a aba 'Diários e matérias' para cadastrar as matérias do Bacharel em Teologia e vincular os professores." 
             />
           </Card>
         ) : (
@@ -298,14 +293,14 @@ function AdminOverview({ institution, disciplines, professors, students, allStat
   );
 }
 
-function AdminUsersView({ students, professors, onOpenNewUser, onDeleteUser }) {
+function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDeleteUser }) {
   const [tab, setTab] = useState('professores'); // 'professores' | 'alunos'
 
   return (
     <>
       <PageHeader
         title="Gerenciamento de Alunos e Professores"
-        subtitle="Cadastre os usuários reais do seminário com e-mails institucionais e senhas de acesso."
+        subtitle="Cadastre e edite os professores e alunos oficiais do seminário (Bacharel em Teologia)."
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" onClick={() => onOpenNewUser('professor')}>
@@ -332,14 +327,14 @@ function AdminUsersView({ students, professors, onOpenNewUser, onDeleteUser }) {
       {tab === 'professores' && (
         <Card className="overflow-hidden">
           <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex justify-between items-center bg-stone-50/50 dark:bg-stone-900/40 text-xs">
-            <span className="text-stone-500 font-medium">Professores cadastrados com permissão de lançar notas e diários</span>
+            <span className="text-stone-500 font-medium">Professores com permissão de lançar notas, tarefas e aulas</span>
             <Button size="sm" onClick={() => onOpenNewUser('professor')}>
               <Plus className="h-3.5 w-3.5" /> Cadastrar Professor
             </Button>
           </div>
 
           {professors.length === 0 ? (
-            <EmptyState icon={Users} title="Nenhum professor cadastrado" text="Clique no botão acima para cadastrar o primeiro professor." />
+            <EmptyState icon={Users} title="Nenhum professor cadastrado" text="Clique no botão acima para cadastrar o primeiro professor do seminário." />
           ) : (
             <div className="divide-y divide-stone-100 dark:divide-stone-800">
               {professors.map((p) => (
@@ -352,11 +347,20 @@ function AdminUsersView({ students, professors, onOpenNewUser, onDeleteUser }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-2 text-xs">
                     <div className="bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-lg text-stone-600 dark:text-stone-300 font-mono flex items-center gap-1.5">
                       <Key className="h-3 w-3 text-stone-400" />
-                      <span>Senha: {p.password || 'prof123'}</span>
+                      <span>Senha: {p.password || 'seta123'}</span>
                     </div>
+
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onEditUser(p)}
+                      title="Editar dados e senha do professor"
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </Button>
 
                     <Button
                       variant="ghost"
@@ -382,7 +386,7 @@ function AdminUsersView({ students, professors, onOpenNewUser, onDeleteUser }) {
       {tab === 'alunos' && (
         <Card className="overflow-hidden">
           <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex justify-between items-center bg-stone-50/50 dark:bg-stone-900/40 text-xs">
-            <span className="text-stone-500 font-medium">Alunos matriculados com acesso ao boletim e envio de tarefas</span>
+            <span className="text-stone-500 font-medium">Alunos matriculados no Bacharel em Teologia</span>
             <Button size="sm" onClick={() => onOpenNewUser('aluno')}>
               <Plus className="h-3.5 w-3.5" /> Cadastrar Aluno
             </Button>
@@ -402,16 +406,25 @@ function AdminUsersView({ students, professors, onOpenNewUser, onDeleteUser }) {
                         <span className="text-xs text-brand-600 dark:text-brand-400 font-bold font-mono">({s.enrollment})</span>
                       </div>
                       <p className="text-xs text-stone-400 mt-0.5">
-                        {s.course} · <span className="font-mono">{s.email}</span>
+                        Bacharel em Teologia · <span className="font-mono">{s.email}</span> · {s.year || '1º ano'}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-2 text-xs">
                     <div className="bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-lg text-stone-600 dark:text-stone-300 font-mono flex items-center gap-1.5">
                       <Key className="h-3 w-3 text-stone-400" />
-                      <span>Senha: {s.password || 'aluno123'}</span>
+                      <span>Senha: {s.password || 'seta123'}</span>
                     </div>
+
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onEditUser(s)}
+                      title="Editar dados e senha do aluno"
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </Button>
 
                     <Button
                       variant="ghost"
@@ -445,6 +458,7 @@ function AdminDisciplinesView({
   onToggleClosed, 
   onSaveConfig, 
   onOpenNewDiscipline,
+  onOpenEditDiscipline,
   onDeleteDiscipline,
   tab, 
   setTab 
@@ -478,12 +492,15 @@ function AdminDisciplinesView({
     <>
       <PageHeader
         title="Gestão da Disciplina"
-        subtitle={`${discipline.code} · ${discipline.name} (Docente: ${personName(prof)})`}
+        subtitle={`${discipline.code} · ${discipline.name} (Docente: ${personName(prof)}) · Bacharel em Teologia`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <DisciplineSelect disciplines={disciplines} value={discipline.id} onChange={onChangeDiscipline} />
             <Button size="sm" onClick={onOpenNewDiscipline}>
               <Plus className="h-3.5 w-3.5" /> Nova Matéria
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => onOpenEditDiscipline(discipline)}>
+              <Pencil className="h-3.5 w-3.5" /> Editar Matéria
             </Button>
             {discipline.gradesClosed ? (
               <Button variant="secondary" size="sm" onClick={() => onToggleClosed(discipline.id, false)}>

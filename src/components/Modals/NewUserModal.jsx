@@ -129,13 +129,11 @@ export function NewUserModal({ open, onClose, onSave, defaultRole = 'aluno' }) {
             </Field>
 
             <Field label="Curso" className="sm:col-span-2">
-              <Select value={course} onChange={(e) => setCourse(e.target.value)}>
-                {COURSES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </Select>
+              <Input
+                disabled
+                value="Bacharel em Teologia (Curso Único)"
+                className="bg-stone-50 dark:bg-stone-800/50 cursor-not-allowed text-stone-600 dark:text-stone-300 font-medium"
+              />
             </Field>
           </div>
         )}

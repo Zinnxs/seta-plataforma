@@ -1,14 +1,14 @@
 /**
- * Estado global do SETA com suporte Híbrido:
+ * Estado global do SETA (Seminário Teológico Aliança) com suporte Híbrido:
  * - Se Supabase estiver configurado: sincroniza diretamente com o banco PostgreSQL na nuvem.
- * - Se não estiver configurado: opera em memória/localStorage (modo demonstração local).
+ * - Se não estiver configurado: opera em cache localStorage local.
  */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { createSeed, DEMO_LOGINS } from '../data/seed';
+import { createSeed } from '../data/seed';
 import { supabase, isSupabaseConfigured, saveSupabaseCredentials, credentialsSource } from './supabase';
 
-const DATA_KEY = 'seta-demo-data-v4';
-const SESSION_KEY = 'seta-session-v4';
+const DATA_KEY = 'seta-prod-v5';
+const SESSION_KEY = 'seta-session-v5';
 
 const Ctx = createContext(null);
 
@@ -70,13 +70,13 @@ export function StoreProvider({ children }) {
         if (usersData && usersData.length > 0) {
           const professors = usersData
             .filter((u) => u.role === 'professor')
-            .map((u) => ({ ...u, password: u.password || 'prof123' }));
+            .map((u) => ({ ...u, password: u.password || 'seta123' }));
           const admins = usersData
             .filter((u) => u.role === 'admin')
-            .map((u) => ({ ...u, password: u.password || 'direcao123' }));
+            .map((u) => ({ ...u, password: u.password || 'setaadmin987' }));
           const students = usersData
             .filter((u) => u.role === 'aluno')
-            .map((u) => ({ ...u, password: u.password || 'aluno123' }));
+            .map((u) => ({ ...u, password: u.password || 'seta123' }));
 
           const disciplines = (discData || []).map((d) => ({
             id: d.id,
@@ -192,7 +192,7 @@ export function StoreProvider({ children }) {
       return next;
     });
 
-  // Funções assíncronas para sincronização com Supabase (Fire-and-forget)
+  // Funções assíncronas para sincronização com Supabase
   const syncGradeToSupabase = async (discId, studentId, record) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
@@ -330,37 +330,29 @@ export function StoreProvider({ children }) {
   };
 
   const actions = {
-    /** Login com validação de e-mail e senha de qualquer usuário real ou provisório */
+    /** Login com validação real de e-mail e senha */
     login(email, password) {
       const cleanEmail = email.trim().toLowerCase();
+      const cleanPass = password.trim();
 
-      // 1. Procura na lista de administradores
+      // 1. Procura na lista de administradores (admin@seta.com / setaadmin987)
       const admin = data.admins.find((u) => u.email.toLowerCase() === cleanEmail);
-      if (admin && (admin.password === password || password === 'direcao123')) {
+      if (admin && admin.password === cleanPass) {
         setSession({ role: 'admin', userId: admin.id });
         return true;
       }
 
       // 2. Procura na lista de professores reais
       const prof = data.professors.find((u) => u.email.toLowerCase() === cleanEmail);
-      if (prof && (prof.password === password || password === 'prof123')) {
+      if (prof && prof.password === cleanPass) {
         setSession({ role: 'professor', userId: prof.id });
         return true;
       }
 
       // 3. Procura na lista de alunos reais
       const student = data.students.find((u) => u.email.toLowerCase() === cleanEmail);
-      if (student && (student.password === password || password === 'aluno123')) {
+      if (student && student.password === cleanPass) {
         setSession({ role: 'aluno', userId: student.id });
-        return true;
-      }
-
-      // 4. Procura nos logins provisórios de demonstração
-      const demo = DEMO_LOGINS.find(
-        (l) => l.email.toLowerCase() === cleanEmail && l.password === password
-      );
-      if (demo) {
-        setSession({ role: demo.role, userId: demo.userId });
         return true;
       }
 
@@ -388,6 +380,35 @@ export function StoreProvider({ children }) {
       syncUserToSupabase(user);
     },
 
+    /** Editar informações de um usuário existente (Professor ou Aluno) */
+    updateUser(updatedUser) {
+      let savedUser = null;
+      update((d) => {
+        if (updatedUser.role === 'professor') {
+          const idx = d.professors.findIndex((p) => p.id === updatedUser.id);
+          if (idx !== -1) {
+            d.professors[idx] = { ...d.professors[idx], ...updatedUser };
+            savedUser = { ...d.professors[idx] };
+          }
+        } else if (updatedUser.role === 'aluno') {
+          const idx = d.students.findIndex((s) => s.id === updatedUser.id);
+          if (idx !== -1) {
+            d.students[idx] = { ...d.students[idx], ...updatedUser };
+            savedUser = { ...d.students[idx] };
+          }
+        } else if (updatedUser.role === 'admin') {
+          const idx = d.admins.findIndex((a) => a.id === updatedUser.id);
+          if (idx !== -1) {
+            d.admins[idx] = { ...d.admins[idx], ...updatedUser };
+            savedUser = { ...d.admins[idx] };
+          }
+        }
+      });
+      if (savedUser) {
+        syncUserToSupabase(savedUser);
+      }
+    },
+
     /** Excluir um usuário do seminário */
     deleteUser(userId, role) {
       update((d) => {
@@ -408,7 +429,7 @@ export function StoreProvider({ children }) {
       deleteUserFromSupabase(userId);
     },
 
-    /** Cadastrar uma nova matéria do zero */
+    /** Cadastrar uma nova matéria do zero e vincular professor */
     addDiscipline(disc) {
       update((d) => {
         d.disciplines.push(disc);
@@ -418,6 +439,21 @@ export function StoreProvider({ children }) {
         });
       });
       syncDisciplineToSupabase(disc);
+    },
+
+    /** Atualizar dados de uma matéria existente */
+    updateDiscipline(updatedDisc) {
+      let savedDisc = null;
+      update((d) => {
+        const idx = d.disciplines.findIndex((x) => x.id === updatedDisc.id);
+        if (idx !== -1) {
+          d.disciplines[idx] = { ...d.disciplines[idx], ...updatedDisc };
+          savedDisc = { ...d.disciplines[idx] };
+        }
+      });
+      if (savedDisc) {
+        syncDisciplineToSupabase(savedDisc);
+      }
     },
 
     /** Excluir uma matéria */
@@ -544,64 +580,6 @@ export function StoreProvider({ children }) {
       update((d) => {
         d.announcements.unshift(ann);
       });
-    },
-
-    /**
-     * Limpa TODOS os dados fictícios (alunos, professores, matérias, notas)
-     * e deixa o sistema limpo do zero, mantendo apenas o login da Direção!
-     */
-    clearAllMockData() {
-      const cleanData = {
-        institution: {
-          name: 'Seminário Teológico Aliança',
-          acronym: 'SETA',
-          period: '2026.2',
-        },
-        admins: [
-          {
-            id: 'adm-1',
-            name: 'Direção Geral do SETA',
-            title: 'Rev.',
-            role: 'admin',
-            email: 'direcao@seta.edu.br',
-            password: 'direcao123',
-          },
-        ],
-        professors: [],
-        students: [],
-        disciplines: [],
-        grades: {},
-        assignments: [],
-        lessons: [],
-        announcements: [
-          {
-            id: 'ann-init',
-            date: new Date().toISOString().slice(0, 10),
-            author: 'Direção Geral',
-            title: 'Ambiente Acadêmico SETA Inicializado',
-            content: 'Plataforma oficial configurada. A direção já pode cadastrar os professores, alunos e as disciplinas do módulo.',
-            important: true,
-          },
-        ],
-      };
-
-      setData(cleanData);
-      localStorage.setItem(DATA_KEY, JSON.stringify(cleanData));
-
-      // Se conectado ao Supabase, limpa as tabelas no banco de dados
-      if (isSupabaseConfigured && supabase) {
-        Promise.all([
-          supabase.from('seta_grades').delete().neq('discipline_id', 'none'),
-          supabase.from('seta_assignments').delete().neq('id', 'none'),
-          supabase.from('seta_lessons').delete().neq('id', 'none'),
-          supabase.from('seta_disciplines').delete().neq('id', 'none'),
-          supabase.from('seta_users').delete().neq('role', 'admin'),
-        ]).catch((e) => console.warn('Erro ao limpar Supabase:', e));
-      }
-    },
-
-    resetDemo() {
-      setData(createSeed());
     },
 
     saveSupabaseCredentials,

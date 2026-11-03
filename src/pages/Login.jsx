@@ -1,16 +1,8 @@
 import { useState } from 'react';
-import { ArrowRight, Building2, Eye, EyeOff, GraduationCap, UserRound } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
 import { useStore } from '../lib/store';
-import { DEMO_LOGINS } from '../data/seed';
 import { Brand, ThemeToggle } from '../components/Brand';
 import { Button, Field, Input } from '../components/ui';
-
-const ICONS = { aluno: GraduationCap, professor: UserRound, admin: Building2 };
-const DESCRIPTIONS = {
-  aluno: 'Boletim, trabalhos e aulas',
-  professor: 'Notas, avaliações e correções',
-  admin: 'Gestão acadêmica e relatórios',
-};
 
 export function Login() {
   const { login } = useStore();
@@ -21,14 +13,11 @@ export function Login() {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!login(email, password)) setError('E-mail ou senha incorretos.');
-  };
-
-  const quickLogin = (l) => {
-    setEmail(l.email);
-    setPassword(l.password);
     setError('');
-    login(l.email, l.password);
+    const success = login(email, password);
+    if (!success) {
+      setError('E-mail ou senha incorretos. Verifique suas credenciais.');
+    }
   };
 
   return (
@@ -43,10 +32,17 @@ export function Login() {
           </p>
           <footer className="mt-4 text-sm text-stone-500 dark:text-stone-400">2 Timóteo 2:15</footer>
         </blockquote>
-        <p className="text-xs text-stone-400 dark:text-stone-500">Ambiente acadêmico · Período letivo 2026.2</p>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+            Seminário Teológico Aliança
+          </p>
+          <p className="text-xs text-stone-400 dark:text-stone-500">
+            Ambiente Acadêmico Oficial · Bacharel em Teologia
+          </p>
+        </div>
       </aside>
 
-      {/* Formulário */}
+      {/* Formulário de Acesso */}
       <main className="flex flex-col">
         <div className="flex items-center justify-between p-6 lg:justify-end">
           <Brand className="lg:hidden" />
@@ -55,20 +51,25 @@ export function Login() {
 
         <div className="flex flex-1 items-center justify-center px-6 pb-16">
           <div className="w-full max-w-sm">
-            <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">Entrar</h1>
-            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">Acesse com seu e-mail institucional.</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">Portal Acadêmico</h1>
+            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+              Digite seu e-mail e senha para acessar sua conta.
+            </p>
 
             <form onSubmit={submit} className="mt-8 space-y-4">
               <Field label="E-mail">
-                <Input
-                  type="email"
-                  autoComplete="username"
-                  placeholder="nome@seta.edu.br"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    type="email"
+                    autoComplete="username"
+                    placeholder="ex: admin@seta.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
               </Field>
+
               <Field label="Senha">
                 <div className="relative">
                   <Input
@@ -90,52 +91,24 @@ export function Login() {
                   </button>
                 </div>
               </Field>
-              {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
-              <Button type="submit" className="w-full">
-                Entrar
-              </Button>
-              <p className="text-center text-xs text-stone-400 dark:text-stone-500">
-                Esqueceu a senha? Fale com a secretaria acadêmica.
-              </p>
-            </form>
 
-            <div className="mt-12">
-              <div className="flex items-center gap-3 text-xs text-stone-400 dark:text-stone-500">
-                <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
-                Acessos Rápidos de Demonstração
-                <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
+              {error && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" className="w-full">
+                Entrar no Sistema
+                <ArrowRight className="h-4 w-4 ml-1.5" />
+              </Button>
+
+              <div className="pt-4 text-center">
+                <p className="text-xs text-stone-400 dark:text-stone-500">
+                  Dúvidas ou perda de acesso? Entre em contato com a secretaria do SETA.
+                </p>
               </div>
-              <p className="text-[11px] text-stone-400 dark:text-stone-500 text-center mt-1.5">
-                (Ou digite o e-mail e senha de qualquer aluno ou professor real criado pela Direção)
-              </p>
-              <div className="mt-4 space-y-2">
-                {DEMO_LOGINS.map((l) => {
-                  const Icon = ICONS[l.role];
-                  return (
-                    <button
-                      key={l.role}
-                      type="button"
-                      onClick={() => quickLogin(l)}
-                      className="group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-white p-3 text-left transition hover:border-brand-300 hover:bg-brand-50/40 dark:border-stone-800 dark:bg-stone-900/50 dark:hover:border-brand-700 dark:hover:bg-stone-900"
-                    >
-                      <span className="grid h-9 w-9 place-items-center rounded-lg bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300">
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline gap-2">
-                          <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{l.label}</span>
-                          <span className="truncate text-xs text-stone-400 dark:text-stone-500">{DESCRIPTIONS[l.role]}</span>
-                        </span>
-                        <span className="mt-0.5 block truncate font-mono text-xs text-stone-500 dark:text-stone-400">
-                          {l.email} · {l.password}
-                        </span>
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-stone-300 transition group-hover:translate-x-0.5 group-hover:text-brand-600 dark:text-stone-600 dark:group-hover:text-brand-300" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            </form>
           </div>
         </div>
       </main>
