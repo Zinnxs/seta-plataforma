@@ -58,9 +58,17 @@ CREATE TABLE IF NOT EXISTS seta_assignments (
   title TEXT NOT NULL,
   description TEXT,
   due_date TEXT NOT NULL,
+  submission_type TEXT NOT NULL DEFAULT 'upload', -- 'upload' | 'email' | 'custom'
+  destination_email TEXT,
+  custom_instructions TEXT,
   submissions JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Garante colunas na tabela de trabalhos caso já exista
+ALTER TABLE seta_assignments ADD COLUMN IF NOT EXISTS submission_type TEXT DEFAULT 'upload';
+ALTER TABLE seta_assignments ADD COLUMN IF NOT EXISTS destination_email TEXT;
+ALTER TABLE seta_assignments ADD COLUMN IF NOT EXISTS custom_instructions TEXT;
 
 -- 5. Tabela de Aulas, Videoaulas e Apostilas
 CREATE TABLE IF NOT EXISTS seta_lessons (
@@ -120,6 +128,42 @@ CREATE POLICY "Public access seta_lessons" ON seta_lessons FOR ALL TO public USI
 
 DROP POLICY IF EXISTS "Public access seta_announcements" ON seta_announcements;
 CREATE POLICY "Public access seta_announcements" ON seta_announcements FOR ALL TO public USING (true) WITH CHECK (true);
+
+-- =========================================================================
+-- BUCKET DE ARMAZENAMENTO DE ARQUIVOS (SUPABASE STORAGE)
+-- =========================================================================
+
+-- Criação do Bucket 'seta-trabalhos' público para anexos reais dos alunos
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'seta-trabalhos', 
+  'seta-trabalhos', 
+  true, 
+  15728640, -- Limite de 15MB por arquivo
+  ARRAY[
+    'application/pdf', 
+    'application/msword', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+    'application/octet-stream', 
+    'text/plain'
+  ]
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 15728640;
+
+-- Políticas de acesso para upload e leitura de trabalhos no Storage
+DROP POLICY IF EXISTS "Public upload seta-trabalhos" ON storage.objects;
+CREATE POLICY "Public upload seta-trabalhos" ON storage.objects
+  FOR INSERT TO public WITH CHECK (bucket_id = 'seta-trabalhos');
+
+DROP POLICY IF EXISTS "Public update seta-trabalhos" ON storage.objects;
+CREATE POLICY "Public update seta-trabalhos" ON storage.objects
+  FOR UPDATE TO public USING (bucket_id = 'seta-trabalhos') WITH CHECK (bucket_id = 'seta-trabalhos');
+
+DROP POLICY IF EXISTS "Public read seta-trabalhos" ON storage.objects;
+CREATE POLICY "Public read seta-trabalhos" ON storage.objects
+  FOR SELECT TO public USING (bucket_id = 'seta-trabalhos');
 
 -- =========================================================================
 -- CARGA INICIAL: APENAS O USUÁRIO DA DIREÇÃO

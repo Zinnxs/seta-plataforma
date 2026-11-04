@@ -138,6 +138,9 @@ export function StoreProvider({ children }) {
           title: a.title,
           description: a.description,
           dueDate: a.due_date,
+          submissionType: a.submission_type || 'upload',
+          destinationEmail: a.destination_email || null,
+          customInstructions: a.custom_instructions || null,
           submissions: a.submissions || [],
         }));
 
@@ -355,13 +358,18 @@ export function StoreProvider({ children }) {
         title: assignment.title,
         description: assignment.description,
         due_date: assignment.dueDate,
-        submissions: assignment.submissions,
+        submission_type: assignment.submissionType || 'upload',
+        destination_email: assignment.destinationEmail || null,
+        custom_instructions: assignment.customInstructions || null,
+        submissions: assignment.submissions || [],
       });
       if (error) {
         console.error('Erro ao salvar trabalho no Supabase:', error);
         setSyncStatus('error');
+        setLastSyncError(`Erro ao salvar trabalho: ${error.message}`);
       } else {
         setSyncStatus('synced');
+        setLastSyncError(null);
       }
     } catch (e) {
       console.warn('Erro ao salvar trabalho no Supabase:', e);
@@ -604,11 +612,89 @@ export function StoreProvider({ children }) {
       let updatedAss = null;
       update((d) => {
         const a = d.assignments.find((x) => x.id === assignmentId);
-        a.submissions = a.submissions.filter((s) => s.studentId !== submission.studentId);
-        a.submissions.push(submission);
+        if (!a) return;
+        a.submissions = (a.submissions || []).filter((s) => s.studentId !== submission.studentId);
+        a.submissions.push({
+          ...submission,
+          submittedAt: submission.submittedAt || new Date().toISOString(),
+          grade: null,
+          feedback: null,
+        });
         updatedAss = { ...a };
       });
       if (updatedAss) syncAssignmentToSupabase(updatedAss);
+    },
+
+    async uploadAssignmentFile(file, assignmentId, studentId) {
+      if (!file) return { success: false, error: 'Nenhum arquivo fornecido' };
+
+      const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+      if (file.size > MAX_SIZE) {
+        return { success: false, error: 'O arquivo excede o limite máximo permitido de 15MB.' };
+      }
+
+      const formatBytes = (bytes) => {
+        if (!bytes) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${(bytes / Math.pow(k, i)).toFixed(1).replace('.', ',')} ${sizes[i]}`;
+      };
+
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${assignmentId}/${studentId}_${Date.now()}_${cleanFileName}`;
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('seta-trabalhos')
+            .upload(filePath, file, {
+              upsert: true,
+              contentType: file.type || 'application/octet-stream',
+            });
+
+          if (uploadErr) {
+            console.warn('Supabase Storage aviso (usando link de visualização local):', uploadErr);
+            const localUrl = URL.createObjectURL(file);
+            return {
+              success: true,
+              fileUrl: localUrl,
+              fileName: file.name,
+              fileSize: formatBytes(file.size),
+              warning: 'Salvo localmente neste navegador.',
+            };
+          }
+
+          const { data: urlData } = supabase.storage
+            .from('seta-trabalhos')
+            .getPublicUrl(filePath);
+
+          return {
+            success: true,
+            fileUrl: urlData.publicUrl,
+            fileName: file.name,
+            fileSize: formatBytes(file.size),
+          };
+        } catch (err) {
+          console.error('Erro no upload de arquivo:', err);
+          const localUrl = URL.createObjectURL(file);
+          return {
+            success: true,
+            fileUrl: localUrl,
+            fileName: file.name,
+            fileSize: formatBytes(file.size),
+          };
+        }
+      }
+
+      // Fallback local
+      const localUrl = URL.createObjectURL(file);
+      return {
+        success: true,
+        fileUrl: localUrl,
+        fileName: file.name,
+        fileSize: formatBytes(file.size),
+      };
     },
 
     gradeSubmission(assignmentId, studentId, grade, feedback) {
