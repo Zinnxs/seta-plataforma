@@ -45,6 +45,7 @@ export function createSeed() {
   return {
     institution: {
       name: 'Seminário Teológico Aliança',
+      portalName: 'Portal SETA',
       acronym: 'SETA',
       period: '2026.2',
     },

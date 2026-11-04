@@ -1,17 +1,36 @@
-import { BookOpen, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { Button, cn } from './ui';
 
-export function Brand({ className }) {
+export function Brand({ className, showSubtitle = true, size = 'md' }) {
+  const isLarge = size === 'lg';
+
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white dark:bg-brand-400 dark:text-stone-950">
-        <BookOpen className="h-4 w-4" />
-      </span>
-      <span className="leading-tight">
-        <span className="block text-sm font-semibold tracking-wide text-stone-900 dark:text-stone-50">SETA</span>
-        <span className="block text-[11px] text-stone-500 dark:text-stone-400">Seminário Teológico Aliança</span>
-      </span>
+      <div 
+        className={cn(
+          'relative shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md shadow-amber-950/20 bg-slate-900',
+          isLarge ? 'h-14 w-14' : 'h-10 w-10'
+        )}
+      >
+        <img 
+          src="/portal_seta_symbol.png" 
+          alt="Selo Oficial SETA" 
+          className="h-full w-full object-cover select-none" 
+        />
+      </div>
+      <div className="leading-tight">
+        <div className="flex items-center gap-1.5">
+          <span className="font-serif text-[15px] font-bold tracking-wider text-slate-900 dark:text-slate-100">
+            PORTAL <span className="text-gold-gradient font-black">SETA</span>
+          </span>
+        </div>
+        {showSubtitle && (
+          <span className="block text-[11px] font-medium tracking-tight text-slate-500 dark:text-amber-200/70">
+            Seminário Teológico Aliança
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -11,17 +11,17 @@ function NavItem({ item, active, onClick, compact }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'flex cursor-pointer items-center gap-3 rounded-xl text-sm transition-colors',
+        'flex cursor-pointer items-center gap-3 rounded-xl text-sm transition-all',
         compact ? 'h-9 shrink-0 px-3' : 'h-10 w-full px-3',
         active
-          ? 'bg-stone-100 font-medium text-stone-900 dark:bg-stone-800/80 dark:text-white'
-          : 'text-stone-500 hover:bg-stone-100/60 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-900 dark:hover:text-stone-100'
+          ? 'bg-amber-500/10 font-semibold text-amber-900 border-l-2 border-amber-500 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400'
+          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900/60 dark:hover:text-slate-200'
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="whitespace-nowrap">{item.label}</span>
       {item.count > 0 && (
-        <span className="ml-auto rounded-full bg-brand-100 px-1.5 text-[11px] font-medium tabular-nums text-brand-700 dark:bg-brand-900/60 dark:text-brand-200">
+        <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-500/30">
           {item.count}
         </span>
       )}
@@ -34,28 +34,28 @@ export function Layout({ nav, page, onNavigate, roleLabel, children }) {
   const name = personName(currentUser);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#faf9f6] text-slate-800 dark:bg-[#070d1e] dark:text-slate-100 transition-colors">
       {/* Barra lateral (desktop) */}
-      <aside className="no-print fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-stone-200/80 bg-white/70 px-4 py-6 md:flex dark:border-stone-800/80 dark:bg-stone-950/60">
+      <aside className="no-print fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-amber-500/15 bg-white/85 px-4 py-6 md:flex dark:border-amber-500/10 dark:bg-[#060a17]/95 backdrop-blur-md">
         <Brand className="px-2" />
 
-        <nav className="mt-10 flex-1 space-y-1">
+        <nav className="mt-8 flex-1 space-y-1">
           {nav.map((item) => (
             <NavItem key={item.id} item={item} active={page === item.id} onClick={() => onNavigate(item.id)} />
           ))}
         </nav>
 
-        <div className="space-y-3 border-t border-stone-200/80 pt-4 dark:border-stone-800">
+        <div className="space-y-3 border-t border-slate-200/80 pt-4 dark:border-slate-800/80">
           <div className="flex items-center gap-3 px-2">
             <Avatar name={currentUser?.name} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{name}</p>
-              <p className="text-xs text-stone-500 dark:text-stone-400">{roleLabel}</p>
+              <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{name}</p>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/80 font-medium">{roleLabel}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle full className="flex-1 justify-start" />
-            <Button variant="ghost" size="icon" onClick={logout} title="Sair" aria-label="Sair">
+            <Button variant="ghost" size="icon" onClick={logout} title="Sair do Portal SETA" aria-label="Sair">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -63,7 +63,7 @@ export function Layout({ nav, page, onNavigate, roleLabel, children }) {
       </aside>
 
       {/* Cabeçalho (mobile) */}
-      <header className="no-print sticky top-0 z-30 border-b border-stone-200/80 bg-white/85 backdrop-blur md:hidden dark:border-stone-800 dark:bg-stone-950/85">
+      <header className="no-print sticky top-0 z-30 border-b border-amber-500/15 bg-white/90 backdrop-blur-md md:hidden dark:border-amber-500/10 dark:bg-[#060a17]/95">
         <div className="flex h-14 items-center justify-between px-4">
           <Brand />
           <div className="flex items-center gap-1">

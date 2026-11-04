@@ -293,6 +293,35 @@ function AdminOverview({
         </div>
       )}
 
+      {/* Banner Oficial Institucional Portal SETA */}
+      <div className="relative mb-8 overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-r from-[#060a17] via-[#0b132b] to-[#121e3f] p-6 text-white shadow-lg shadow-amber-950/20">
+        <div className="pointer-events-none absolute -right-10 -bottom-10 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md bg-[#070d1e]">
+            <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-cover" />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-0.5 text-xs font-semibold text-amber-300">
+              Ambiente Acadêmico Institucional
+            </div>
+            <h2 className="mt-1.5 font-serif text-2xl font-bold tracking-wide text-white">
+              PORTAL <span className="text-gold-gradient font-black">SETA</span>
+            </h2>
+            <p className="text-xs text-amber-200/80 font-medium tracking-wide">
+              Seminário Teológico Aliança · Bacharel em Teologia · Período {institution.period}
+            </p>
+          </div>
+          <div className="hidden lg:block shrink-0 text-right border-l border-amber-500/20 pl-6">
+            <p className="text-[11px] font-semibold tracking-[0.25em] text-amber-300">
+              CONHECER · SERVIR · GLORIFICAR
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Gestão Central da Direção
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Stat label="Total de Alunos" value={students.length} hint="Corpo discente cadastrado" />
         <Stat label="Professores" value={professors.length} hint="Corpo docente ativo" />

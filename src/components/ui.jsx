@@ -10,7 +10,7 @@ export function Card({ className, children, ...p }) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-stone-200/80 bg-white dark:border-stone-800 dark:bg-stone-900/50',
+        'rounded-2xl border border-stone-200/80 bg-white shadow-xs dark:border-amber-500/10 dark:bg-[#0c1429]/80 dark:shadow-md backdrop-blur-xs',
         className
       )}
       {...p}
@@ -24,7 +24,7 @@ export function CardHeader({ title, subtitle, action, className }) {
   return (
     <div className={cn('flex items-start justify-between gap-4 px-5 pt-5', className)}>
       <div>
-        <h2 className="text-sm font-medium text-stone-900 dark:text-stone-100">{title}</h2>
+        <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</h2>
         {subtitle && <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{subtitle}</p>}
       </div>
       {action}
@@ -35,10 +35,10 @@ export function CardHeader({ title, subtitle, action, className }) {
 /* ---------- Botões ---------- */
 const BTN = {
   primary:
-    'bg-brand-600 text-white hover:bg-brand-700 dark:bg-brand-400 dark:text-stone-950 dark:hover:bg-brand-300',
+    'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-slate-950 font-semibold shadow-xs hover:brightness-105 active:scale-[0.98] dark:from-amber-400 dark:via-amber-300 dark:to-amber-500 dark:text-slate-950',
   secondary:
-    'border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800',
-  ghost: 'text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100',
+    'border border-stone-200/90 bg-white text-stone-700 hover:bg-stone-50 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800',
+  ghost: 'text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-slate-800/80 dark:hover:text-stone-100',
   danger: 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40',
   dangerSolid: 'bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-400',
 };
@@ -47,7 +47,7 @@ export function Button({ variant = 'primary', size = 'md', className, children, 
   return (
     <button
       className={cn(
-        'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl font-medium transition-colors disabled:pointer-events-none disabled:opacity-45',
+        'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl font-medium transition-all disabled:pointer-events-none disabled:opacity-45',
         size === 'sm' ? 'h-8 px-3 text-xs' : size === 'icon' ? 'h-9 w-9' : 'h-10 px-4 text-sm',
         BTN[variant],
         className
@@ -61,11 +61,12 @@ export function Button({ variant = 'primary', size = 'md', className, children, 
 
 /* ---------- Badges ---------- */
 const TONES = {
-  neutral: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300',
+  neutral: 'bg-stone-100 text-stone-600 dark:bg-slate-800 dark:text-slate-300',
   green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
-  amber: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
+  amber: 'bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
   red: 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300',
-  brand: 'bg-brand-50 text-brand-700 dark:bg-brand-900/50 dark:text-brand-200',
+  blue: 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
+  brand: 'bg-amber-50 text-amber-900 border border-amber-300/40 dark:bg-amber-950/50 dark:text-amber-200 dark:border-amber-700/40',
 };
 
 export function Badge({ tone = 'neutral', className, children }) {
@@ -89,7 +90,7 @@ export function StatusBadge({ status }) {
 
 /* ---------- Formulários ---------- */
 const FIELD =
-  'w-full rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-800 outline-none transition placeholder:text-stone-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-brand-500 dark:focus:ring-brand-900/40';
+  'w-full rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-800 outline-none transition placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-[#091024] dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-amber-400 dark:focus:ring-amber-400/20';
 
 export function Input({ className, ...p }) {
   return <input className={cn(FIELD, 'h-10', className)} {...p} />;
@@ -148,8 +149,8 @@ export function PageHeader({ title, subtitle, actions }) {
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{subtitle}</p>}
+        <h1 className="font-serif text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{title}</h1>
+        {subtitle && <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {actions && <div className="no-print flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -158,12 +159,12 @@ export function PageHeader({ title, subtitle, actions }) {
 
 export function Stat({ label, value, hint }) {
   return (
-    <Card className="p-5">
-      <p className="text-xs text-stone-500 dark:text-stone-400">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-stone-900 dark:text-stone-50">
+    <Card className="p-5 border-l-4 border-l-amber-500/80 dark:border-l-amber-400">
+      <p className="text-xs font-medium text-stone-500 dark:text-slate-400">{label}</p>
+      <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-white">
         {value}
       </p>
-      {hint && <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-stone-400 dark:text-slate-500">{hint}</p>}
     </Card>
   );
 }
@@ -172,7 +173,7 @@ export function Avatar({ name, size = 'md' }) {
   return (
     <span
       className={cn(
-        'grid shrink-0 place-items-center rounded-full bg-brand-100 font-medium text-brand-700 dark:bg-brand-900/60 dark:text-brand-200',
+        'grid shrink-0 place-items-center rounded-full bg-amber-100 font-semibold text-amber-900 dark:bg-amber-950/70 dark:text-amber-200 dark:border dark:border-amber-500/30',
         size === 'sm' ? 'h-7 w-7 text-[11px]' : size === 'lg' ? 'h-12 w-12 text-base' : 'h-9 w-9 text-xs'
       )}
     >

@@ -140,6 +140,28 @@ function StudentReportCard({ student, rows, period }) {
         }
       />
 
+      {/* Banner Oficial do Aluno */}
+      <div className="relative mb-8 overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-[#060a17] via-[#0b132b] to-[#121e3f] p-5 text-white shadow-md">
+        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 bg-[#070d1e] shadow-md">
+              <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-cover" />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
+                Portal SETA · Área do Aluno
+              </div>
+              <h2 className="mt-1 font-serif text-lg font-bold text-white">{student.name}</h2>
+              <p className="text-xs text-slate-300">Bacharel em Teologia · Matrícula: <strong>{student.enrollment}</strong></p>
+            </div>
+          </div>
+          <div className="text-center sm:text-right border-t sm:border-t-0 sm:border-l border-amber-500/20 pt-3 sm:pt-0 sm:pl-5">
+            <p className="text-xs font-semibold text-amber-300">Período {period}</p>
+            <p className="text-[11px] text-slate-400">Seminário Teológico Aliança</p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
         <Card className="p-5">
           <p className="text-xs text-stone-500 dark:text-stone-400">Pontuação Média Acumulada</p>
