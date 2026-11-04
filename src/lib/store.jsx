@@ -405,6 +405,40 @@ export function StoreProvider({ children }) {
     }
   };
 
+  const deleteAssignmentFromSupabase = async (assignmentId) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_assignments').delete().eq('id', assignmentId);
+      if (error) {
+        console.error('Erro ao deletar atividade no Supabase:', error);
+        setSyncStatus('error');
+      } else {
+        setSyncStatus('synced');
+      }
+    } catch (e) {
+      console.warn('Erro ao deletar atividade no Supabase:', e);
+      setSyncStatus('error');
+    }
+  };
+
+  const deleteLessonFromSupabase = async (lessonId) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_lessons').delete().eq('id', lessonId);
+      if (error) {
+        console.error('Erro ao deletar aula no Supabase:', error);
+        setSyncStatus('error');
+      } else {
+        setSyncStatus('synced');
+      }
+    } catch (e) {
+      console.warn('Erro ao deletar aula no Supabase:', e);
+      setSyncStatus('error');
+    }
+  };
+
   const actions = {
     /** Login com validação real de e-mail e senha */
     login(email, password) {
@@ -608,6 +642,25 @@ export function StoreProvider({ children }) {
       syncAssignmentToSupabase(assignment);
     },
 
+    updateAssignment(updated) {
+      let toSync = null;
+      update((d) => {
+        const idx = d.assignments.findIndex((x) => x.id === updated.id);
+        if (idx !== -1) {
+          d.assignments[idx] = { ...d.assignments[idx], ...updated };
+          toSync = { ...d.assignments[idx] };
+        }
+      });
+      if (toSync) syncAssignmentToSupabase(toSync);
+    },
+
+    deleteAssignment(assignmentId) {
+      update((d) => {
+        d.assignments = d.assignments.filter((x) => x.id !== assignmentId);
+      });
+      deleteAssignmentFromSupabase(assignmentId);
+    },
+
     submitWork(assignmentId, submission) {
       let updatedAss = null;
       update((d) => {
@@ -728,6 +781,25 @@ export function StoreProvider({ children }) {
         d.lessons.push(lesson);
       });
       syncLessonToSupabase(lesson);
+    },
+
+    updateLesson(updated) {
+      let toSync = null;
+      update((d) => {
+        const idx = d.lessons.findIndex((x) => x.id === updated.id);
+        if (idx !== -1) {
+          d.lessons[idx] = { ...d.lessons[idx], ...updated };
+          toSync = { ...d.lessons[idx] };
+        }
+      });
+      if (toSync) syncLessonToSupabase(toSync);
+    },
+
+    deleteLesson(lessonId) {
+      update((d) => {
+        d.lessons = d.lessons.filter((x) => x.id !== lessonId);
+      });
+      deleteLessonFromSupabase(lessonId);
     },
 
     addAnnouncement(ann) {

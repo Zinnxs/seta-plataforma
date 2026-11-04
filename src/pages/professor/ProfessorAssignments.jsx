@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, FileText, Plus, Download, Mail, MessageSquare, Upload, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Calendar, FileText, Plus, Download, Mail, MessageSquare, Upload, ExternalLink, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { fmtDate, fmtDateTime, fmtGrade, isPast } from '../../lib/format';
 import {
@@ -18,8 +18,9 @@ import {
 } from '../../components/ui';
 
 export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipline }) {
-  const { data, addAssignment, gradeSubmission } = useStore();
+  const { data, addAssignment, updateAssignment, deleteAssignment, gradeSubmission } = useStore();
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { assignment, submission }
 
   const enrolled = Object.keys(data.grades[discipline.id] || {});
@@ -29,11 +30,11 @@ export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipli
     <>
       <PageHeader
         title="Trabalhos"
-        subtitle="Publique atividades, receba os arquivos dos alunos e registre a correção."
+        subtitle="Publique, edite atividades acadêmicas, receba os trabalhos dos alunos e registre a correção."
         actions={
           <>
             <DisciplineSelect disciplines={disciplines} value={discipline.id} onChange={onChangeDiscipline} />
-            <Button onClick={() => setCreating(true)} disabled={discipline.gradesClosed}>
+            <Button onClick={() => setCreating(true)}>
               <Plus className="h-4 w-4" /> Nova atividade
             </Button>
           </>
@@ -102,12 +103,33 @@ export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipli
                   </div>
                 </div>
 
-                <div className="shrink-0 text-left sm:text-right">
-                  <p className="text-xs text-stone-400">Entregas</p>
-                  <p className="text-lg font-semibold tabular-nums text-stone-800 dark:text-stone-100">
-                    {a.submissions.length}
-                    <span className="text-xs font-normal text-stone-400"> / {enrolled.length}</span>
-                  </p>
+                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-3 shrink-0">
+                  <div className="text-left sm:text-right">
+                    <p className="text-xs text-stone-400">Entregas</p>
+                    <p className="text-lg font-semibold tabular-nums text-stone-800 dark:text-stone-100">
+                      {a.submissions.length}
+                      <span className="text-xs font-normal text-stone-400"> / {enrolled.length}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Button variant="secondary" size="sm" onClick={() => setEditing(a)} title="Editar atividade">
+                      <Pencil className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline ml-1">Editar</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                      onClick={() => {
+                        if (window.confirm(`Tem certeza que deseja excluir a atividade "${a.title}"?`)) {
+                          deleteAssignment(a.id);
+                        }
+                      }}
+                      title="Excluir atividade"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -134,7 +156,6 @@ export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipli
                         <Button
                           variant={s.grade === null ? 'primary' : 'ghost'}
                           size="sm"
-                          disabled={discipline.gradesClosed}
                           onClick={() => setReviewing({ assignment: a, submission: s, evaluation })}
                         >
                           {s.grade === null ? 'Corrigir' : 'Revisar'}
@@ -155,13 +176,22 @@ export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipli
         })}
       </div>
 
-      {creating && (
-        <NewAssignmentModal
+      {(creating || editing) && (
+        <AssignmentFormModal
           discipline={discipline}
-          onClose={() => setCreating(false)}
-          onSave={(a) => {
-            addAssignment(a);
+          assignment={editing}
+          onClose={() => {
             setCreating(false);
+            setEditing(null);
+          }}
+          onSave={(a) => {
+            if (editing) {
+              updateAssignment(a);
+            } else {
+              addAssignment(a);
+            }
+            setCreating(false);
+            setEditing(null);
           }}
         />
       )}
@@ -181,16 +211,17 @@ export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipli
   );
 }
 
-function NewAssignmentModal({ discipline, onClose, onSave }) {
+function AssignmentFormModal({ discipline, assignment, onClose, onSave }) {
   const { currentUser } = useStore();
+  const isEditing = Boolean(assignment);
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    dueDate: '',
-    evaluationId: discipline.evaluations[0]?.id ?? '',
-    submissionType: 'upload', // 'upload' | 'email' | 'custom'
-    destinationEmail: currentUser?.email || '',
-    customInstructions: '',
+    title: assignment?.title || '',
+    description: assignment?.description || '',
+    dueDate: assignment?.dueDate || '',
+    evaluationId: assignment ? (assignment.evaluationId ?? '') : (discipline.evaluations[0]?.id ?? ''),
+    submissionType: assignment?.submissionType || 'upload', // 'upload' | 'email' | 'custom'
+    destinationEmail: assignment?.destinationEmail || currentUser?.email || '',
+    customInstructions: assignment?.customInstructions || '',
   });
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -200,7 +231,7 @@ function NewAssignmentModal({ discipline, onClose, onSave }) {
     <Modal
       open
       onClose={onClose}
-      title="Nova atividade acadêmica"
+      title={isEditing ? 'Editar atividade acadêmica' : 'Nova atividade acadêmica'}
       description={`${discipline.code} · ${discipline.name}`}
       footer={
         <>
@@ -211,7 +242,7 @@ function NewAssignmentModal({ discipline, onClose, onSave }) {
             disabled={!valid}
             onClick={() =>
               onSave({
-                id: `ass-${Date.now()}`,
+                id: assignment?.id || `ass-${Date.now()}`,
                 disciplineId: discipline.id,
                 evaluationId: form.evaluationId || null,
                 title: form.title.trim(),
@@ -220,11 +251,11 @@ function NewAssignmentModal({ discipline, onClose, onSave }) {
                 submissionType: form.submissionType,
                 destinationEmail: form.submissionType === 'email' ? (form.destinationEmail.trim() || currentUser?.email) : null,
                 customInstructions: form.submissionType === 'custom' ? form.customInstructions.trim() : null,
-                submissions: [],
+                submissions: assignment?.submissions || [],
               })
             }
           >
-            Publicar atividade
+            {isEditing ? 'Salvar alterações' : 'Publicar atividade'}
           </Button>
         </>
       }

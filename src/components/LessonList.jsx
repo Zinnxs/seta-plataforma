@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ExternalLink, FileText, Paperclip, PlayCircle, Radio, Video } from 'lucide-react';
+import { ExternalLink, FileText, Paperclip, PlayCircle, Radio, Video, Pencil, Trash2 } from 'lucide-react';
 import { fmtDate } from '../lib/format';
 import { Badge, Button, Card, EmptyState, Modal } from './ui';
 
 /** Lista de aulas agrupadas por módulo (usada por professor e aluno) */
-export function LessonList({ lessons, showDiscipline, disciplines = [] }) {
+export function LessonList({ lessons, showDiscipline, disciplines = [], onEdit, onDelete }) {
   const [open, setOpen] = useState(null);
 
   if (!lessons.length) {
@@ -52,9 +52,32 @@ export function LessonList({ lessons, showDiscipline, disciplines = [] }) {
                       {l.materials?.length ? ` · ${l.materials.length} material(is)` : ''}
                     </p>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => setOpen(l)}>
-                    {live ? 'Ver detalhes' : 'Assistir'}
-                  </Button>
+                  <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                    <Button variant="secondary" size="sm" onClick={() => setOpen(l)}>
+                      {live ? 'Ver detalhes' : 'Assistir'}
+                    </Button>
+                    {onEdit && (
+                      <Button variant="ghost" size="sm" onClick={() => onEdit(l)} title="Editar aula">
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline ml-1">Editar</span>
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                        onClick={() => {
+                          if (window.confirm(`Tem certeza que deseja excluir a aula "${l.title}"?`)) {
+                            onDelete(l.id);
+                          }
+                        }}
+                        title="Excluir aula"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}

@@ -5,15 +5,16 @@ import { LessonList } from '../../components/LessonList';
 import { Button, DisciplineSelect, Field, Input, Modal, PageHeader, Tabs, Textarea } from '../../components/ui';
 
 export function ProfessorLessons({ discipline, disciplines, onChangeDiscipline }) {
-  const { data, addLesson } = useStore();
+  const { data, addLesson, updateLesson, deleteLesson } = useStore();
   const [creating, setCreating] = useState(false);
+  const [editingLesson, setEditingLesson] = useState(null);
   const lessons = data.lessons.filter((l) => l.disciplineId === discipline.id);
 
   return (
     <>
       <PageHeader
         title="Aulas e materiais"
-        subtitle="Publique aulas gravadas, links de aulas ao vivo e apostilas."
+        subtitle="Publique, edite e gerencie aulas gravadas, links de aulas ao vivo e apostilas."
         actions={
           <>
             <DisciplineSelect disciplines={disciplines} value={discipline.id} onChange={onChangeDiscipline} />
@@ -24,16 +25,29 @@ export function ProfessorLessons({ discipline, disciplines, onChangeDiscipline }
         }
       />
 
-      <LessonList lessons={lessons} />
+      <LessonList
+        lessons={lessons}
+        onEdit={(l) => setEditingLesson(l)}
+        onDelete={(id) => deleteLesson(id)}
+      />
 
-      {creating && (
-        <NewLessonModal
+      {(creating || editingLesson) && (
+        <LessonFormModal
           discipline={discipline}
+          lesson={editingLesson}
           modules={[...new Set(lessons.map((l) => l.module))]}
-          onClose={() => setCreating(false)}
-          onSave={(l) => {
-            addLesson(l);
+          onClose={() => {
             setCreating(false);
+            setEditingLesson(null);
+          }}
+          onSave={(l) => {
+            if (editingLesson) {
+              updateLesson(l);
+            } else {
+              addLesson(l);
+            }
+            setCreating(false);
+            setEditingLesson(null);
           }}
         />
       )}
@@ -41,17 +55,21 @@ export function ProfessorLessons({ discipline, disciplines, onChangeDiscipline }
   );
 }
 
-function NewLessonModal({ discipline, modules, onClose, onSave }) {
-  const [kind, setKind] = useState('gravada');
+function LessonFormModal({ discipline, lesson, modules, onClose, onSave }) {
+  const isEditing = Boolean(lesson);
+  const [kind, setKind] = useState(lesson?.kind || 'gravada');
   const [form, setForm] = useState({
-    module: modules[modules.length - 1] ?? 'Módulo 1',
-    title: '',
-    date: new Date().toISOString().slice(0, 10),
-    duration: '',
-    url: '',
-    summary: '',
-    materials: '',
+    module: lesson?.module ?? (modules[modules.length - 1] ?? 'Módulo 1'),
+    title: lesson?.title ?? '',
+    date: lesson?.date ?? new Date().toISOString().slice(0, 10),
+    duration: lesson?.duration ?? '',
+    url: lesson?.url ?? '',
+    summary: lesson?.summary ?? '',
+    materials: lesson?.materials
+      ? lesson.materials.map((m) => (typeof m === 'string' ? m : m.name)).join('\n')
+      : '',
   });
+
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const valid = form.title.trim() && form.date;
 
@@ -59,7 +77,7 @@ function NewLessonModal({ discipline, modules, onClose, onSave }) {
     <Modal
       open
       onClose={onClose}
-      title="Nova aula"
+      title={isEditing ? 'Editar aula' : 'Nova aula'}
       description={`${discipline.code} · ${discipline.name}`}
       footer={
         <>
@@ -70,7 +88,7 @@ function NewLessonModal({ discipline, modules, onClose, onSave }) {
             disabled={!valid}
             onClick={() =>
               onSave({
-                id: `les-${Date.now()}`,
+                id: lesson?.id || `les-${Date.now()}`,
                 disciplineId: discipline.id,
                 module: form.module.trim() || 'Geral',
                 title: form.title.trim(),
@@ -87,7 +105,7 @@ function NewLessonModal({ discipline, modules, onClose, onSave }) {
               })
             }
           >
-            Publicar aula
+            {isEditing ? 'Salvar alterações' : 'Publicar aula'}
           </Button>
         </>
       }
