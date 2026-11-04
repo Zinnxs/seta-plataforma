@@ -35,9 +35,13 @@ CREATE TABLE IF NOT EXISTS seta_disciplines (
   max_absences INT NOT NULL DEFAULT 15,
   recovery_rule TEXT NOT NULL DEFAULT 'substitui_menor',
   grades_closed BOOLEAN NOT NULL DEFAULT false,
+  status TEXT NOT NULL DEFAULT 'em_andamento', -- 'em_andamento', 'concluida', 'futura'
   evaluations JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Garante a coluna status caso a tabela já tenha sido criada anteriormente
+ALTER TABLE seta_disciplines ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'em_andamento';
 
 -- 3. Tabela de Notas e Faltas (Pontuação Somada com corte mínimo de 7,0 pts)
 CREATE TABLE IF NOT EXISTS seta_grades (

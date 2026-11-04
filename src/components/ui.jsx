@@ -280,11 +280,15 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, text, confirmLa
 export function DisciplineSelect({ disciplines, value, onChange }) {
   return (
     <Select value={value} onChange={(e) => onChange(e.target.value)} className="w-full sm:w-80">
-      {disciplines.map((d) => (
-        <option key={d.id} value={d.id}>
-          {d.code} · {d.name}
-        </option>
-      ))}
+      {disciplines.map((d) => {
+        const st = d.status || (d.gradesClosed ? 'concluida' : 'em_andamento');
+        const prefix = st === 'concluida' ? '🟢 Concluída' : st === 'futura' ? '⚪ Futura' : '🟡 Em andamento';
+        return (
+          <option key={d.id} value={d.id}>
+            [{prefix}] {d.code} · {d.name}
+          </option>
+        );
+      })}
     </Select>
   );
 }

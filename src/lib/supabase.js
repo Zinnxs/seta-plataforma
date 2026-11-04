@@ -1,52 +1,100 @@
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * Corrige e padroniza a URL do Supabase para o formato esperado pelo SDK:
+ * Corrige e padroniza a URL do Supabase para o formato estrito esperado pelo SDK:
  * https://<project-ref>.supabase.co
- * Remove automaticamente caminhos extras como /rest/v1 ou URLs do dashboard
+ * 
+ * Elimina preventivamente o erro do PostgREST:
+ * "Invalid path specified in request URI."
+ * Removendo quaisquer caminhos extras, aspas ou links do dashboard.
  */
 export function formatSupabaseUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
-  let clean = rawUrl.trim();
+  let clean = rawUrl.trim().replace(/^['"]+|['"]+$/g, '');
 
-  // 1. Se o usuário colou a URL do dashboard: https://supabase.com/dashboard/project/xyzabcdef/...
-  const dashboardMatch = clean.match(/supabase\.com\/dashboard\/project\/([a-z0-9_-]+)/i);
-  if (dashboardMatch) {
-    clean = `https://${dashboardMatch[1]}.supabase.co`;
+  // 1. Se colou apenas o ID de referência do projeto (ex: "yqgqomvz...")
+  if (/^[a-z0-9_-]{12,35}$/i.test(clean)) {
+    return `https://${clean}.supabase.co`;
   }
 
-  // 2. Remove caminhos da API colados por engano (/rest/v1, /auth/v1, etc.)
-  clean = clean.replace(/\/(rest|auth|storage)\/v[0-9]+(\/.*)?$/i, '');
+  // 2. Se colou a URL da barra de endereço do Dashboard do Supabase:
+  // ex: https://supabase.com/dashboard/project/yqgqomvz.../editor
+  const dashboardMatch = clean.match(/supabase\.com\/dashboard\/project\/([a-z0-9_-]+)/i);
+  if (dashboardMatch) {
+    return `https://${dashboardMatch[1]}.supabase.co`;
+  }
 
-  // 3. Remove quaisquer barras no final
-  clean = clean.replace(/\/+$/, '');
-
-  // 4. Garante o protocolo https:// se não tiver
-  if (clean && !clean.startsWith('http://') && !clean.startsWith('https://')) {
+  // 3. Garante protocolo https:// se não fornecido
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
     clean = `https://${clean}`;
   }
 
-  return clean;
+  // 4. Se for subdomínio *.supabase.co, extrai ESTRITAMENTE https://<subdominio>.supabase.co
+  // Qualquer path adicional como /rest/v1 gera o erro fatal do PostgREST:
+  // "Invalid path specified in request URI."
+  try {
+    const parsed = new URL(clean);
+    if (parsed.hostname.toLowerCase().endsWith('.supabase.co')) {
+      return `https://${parsed.hostname.toLowerCase()}`;
+    }
+    // Caso de servidor Supabase self-hosted customizado: retorne a origin sem paths de API
+    return parsed.origin;
+  } catch {
+    // Fallback caso new URL falhe
+    clean = clean.replace(/\/(rest|auth|storage|graphql)\/v[0-9]+(\/.*)?$/i, '');
+    clean = clean.replace(/\/+$/, '');
+    return clean;
+  }
+}
+
+/**
+ * Normaliza as credenciais e detecta se o usuário inverteu URL e Anon Key por engano
+ */
+export function normalizeCredentials(rawUrl, rawKey) {
+  let cleanUrl = (rawUrl || '').trim().replace(/^['"]+|['"]+$/g, '');
+  let cleanKey = (rawKey || '').trim().replace(/^['"]+|['"]+$/g, '');
+
+  // A chave Anon Key é SEMPRE um token JWT longo iniciando em "eyJ"
+  // Se cleanUrl começa com "eyJ" e cleanKey tem "supabase" ou "http", o usuário inverteu os campos!
+  if (cleanUrl.startsWith('eyJ') && (cleanKey.includes('supabase') || cleanKey.startsWith('http'))) {
+    const temp = cleanUrl;
+    cleanUrl = cleanKey;
+    cleanKey = temp;
+  }
+
+  return {
+    url: formatSupabaseUrl(cleanUrl),
+    key: cleanKey,
+  };
 }
 
 // Tenta obter as credenciais do ambiente Vite (.env ou Vercel)
 // Ou de uma configuração salva no localStorage pelo usuário
 const getCredentials = () => {
-  const envUrl = formatSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
-  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  const envUrl = import.meta.env.VITE_SUPABASE_URL;
+  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   
   if (envUrl && envKey) {
-    return { url: envUrl, key: envKey, source: 'env' };
+    const norm = normalizeCredentials(envUrl, envKey);
+    if (norm.url && norm.key) {
+      return { url: norm.url, key: norm.key, source: 'env' };
+    }
   }
 
   try {
     const local = localStorage.getItem('seta-supabase-credentials');
     if (local) {
       const parsed = JSON.parse(local);
-      const formattedLocalUrl = formatSupabaseUrl(parsed.url);
-      const cleanLocalKey = (parsed.key || '').trim();
-      if (formattedLocalUrl && cleanLocalKey) {
-        return { url: formattedLocalUrl, key: cleanLocalKey, source: 'local' };
+      const norm = normalizeCredentials(parsed.url, parsed.key);
+      if (norm.url && norm.key) {
+        // Se a normalização corrigiu algo no localStorage, atualiza silenciosamente
+        if (norm.url !== parsed.url || norm.key !== parsed.key) {
+          localStorage.setItem(
+            'seta-supabase-credentials',
+            JSON.stringify({ url: norm.url, key: norm.key })
+          );
+        }
+        return { url: norm.url, key: norm.key, source: 'local' };
       }
     }
   } catch (e) {
@@ -68,15 +116,14 @@ export const supabase = isSupabaseConfigured
 
 /** Salva credenciais do Supabase no navegador e recarrega */
 export function saveSupabaseCredentials(url, key) {
-  const cleanUrl = formatSupabaseUrl(url);
-  const cleanKey = (key || '').trim();
+  const norm = normalizeCredentials(url, key);
 
-  if (!cleanUrl || !cleanKey) {
+  if (!norm.url || !norm.key) {
     localStorage.removeItem('seta-supabase-credentials');
   } else {
     localStorage.setItem(
       'seta-supabase-credentials',
-      JSON.stringify({ url: cleanUrl, key: cleanKey })
+      JSON.stringify({ url: norm.url, key: norm.key })
     );
   }
   window.location.reload();

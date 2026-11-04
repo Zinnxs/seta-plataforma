@@ -1,12 +1,26 @@
-import { ArrowRight, CheckCircle2, Radio } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, CheckCircle2, Radio, BookOpen } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { disciplineStats } from '../../lib/grades';
 import { firstName, fmtDate, fmtDateTime, fmtGrade } from '../../lib/format';
 import { typeLabel } from '../../data/seed';
-import { Avatar, Badge, Button, Card, CardHeader, EmptyState, PageHeader } from '../../components/ui';
+import { Avatar, Badge, Button, Card, CardHeader, EmptyState, PageHeader, cn } from '../../components/ui';
 
 export function ProfessorOverview({ disciplines, onNavigate }) {
   const { data, currentUser } = useStore();
+  const [statusFilter, setStatusFilter] = useState('em_andamento'); // 'em_andamento' | 'concluida' | 'futura' | 'todas'
+
+  const activeDisciplines = disciplines.filter(d => (d.status || (d.gradesClosed ? 'concluida' : 'em_andamento')) === 'em_andamento');
+  const concludedDisciplines = disciplines.filter(d => (d.status || (d.gradesClosed ? 'concluida' : 'em_andamento')) === 'concluida');
+  const futureDisciplines = disciplines.filter(d => d.status === 'futura');
+
+  const filteredDisciplines = statusFilter === 'todas' 
+    ? disciplines 
+    : statusFilter === 'concluida' 
+      ? concludedDisciplines 
+      : statusFilter === 'futura' 
+        ? futureDisciplines 
+        : activeDisciplines;
 
   const pending = [];
   data.assignments.forEach((a) => {
@@ -50,20 +64,98 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {disciplines.map((d) => {
-          const st = disciplineStats(d, data.grades[d.id]);
-          return (
-            <Card key={d.id} className="flex flex-col p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">
-                    {d.code} · {d.schedule}
-                  </p>
-                  <h3 className="mt-0.5 font-medium text-stone-900 dark:text-stone-50">{d.name}</h3>
+      {/* Barra de Filtro do Arquivo de Matérias */}
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Disciplinas sob sua Responsabilidade</h3>
+          <p className="text-xs text-stone-400">Gerencie notas, frequências e critérios de avaliação</p>
+        </div>
+
+        <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-stone-800/80 rounded-xl text-xs overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('em_andamento')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              statusFilter === 'em_andamento'
+                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+            )}
+          >
+            Em Andamento ({activeDisciplines.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('concluida')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              statusFilter === 'concluida'
+                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+            )}
+          >
+            Concluídas ({concludedDisciplines.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('futura')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              statusFilter === 'futura'
+                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+            )}
+          >
+            Futuras ({futureDisciplines.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('todas')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              statusFilter === 'todas'
+                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+            )}
+          >
+            Todas ({disciplines.length})
+          </button>
+        </div>
+      </div>
+
+      {filteredDisciplines.length === 0 ? (
+        <Card className="mb-8">
+          <EmptyState
+            icon={BookOpen}
+            title={`Nenhuma matéria ${statusFilter === 'concluida' ? 'concluída' : statusFilter === 'futura' ? 'futura' : 'em andamento'}`}
+            text="Alterne as abas acima para navegar pelas outras disciplinas."
+          />
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {filteredDisciplines.map((d) => {
+            const st = disciplineStats(d, data.grades[d.id]);
+            const isCompleted = (d.status || (d.gradesClosed ? 'concluida' : 'em_andamento')) === 'concluida';
+            const isFuture = d.status === 'futura';
+            return (
+              <Card key={d.id} className="flex flex-col p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">
+                      {d.code} · {d.schedule}
+                    </p>
+                    <h3 className="mt-0.5 font-medium text-stone-900 dark:text-stone-50">{d.name}</h3>
+                  </div>
+                  {isCompleted ? (
+                    <Badge tone="green">Concluída / Arquivada</Badge>
+                  ) : isFuture ? (
+                    <Badge tone="neutral">Futura / Planejada</Badge>
+                  ) : d.gradesClosed ? (
+                    <Badge tone="neutral">Diário enviado</Badge>
+                  ) : (
+                    <Badge tone="brand">Em andamento</Badge>
+                  )}
                 </div>
-                {d.gradesClosed ? <Badge>Diário enviado</Badge> : <Badge tone="brand">Em andamento</Badge>}
-              </div>
 
               <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
                 <div>
@@ -106,6 +198,7 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
           );
         })}
       </div>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <Card>

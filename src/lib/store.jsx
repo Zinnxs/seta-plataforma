@@ -105,6 +105,7 @@ export function StoreProvider({ children }) {
           maxAbsences: d.max_absences,
           recoveryRule: d.recovery_rule,
           gradesClosed: d.grades_closed,
+          status: d.status || (d.grades_closed ? 'concluida' : 'em_andamento'),
           evaluations: d.evaluations || [],
         }));
 
@@ -247,7 +248,7 @@ export function StoreProvider({ children }) {
     }
     try {
       setSyncStatus('syncing');
-      const { error } = await supabase.from('seta_disciplines').upsert({
+      const basePayload = {
         id: disc.id,
         code: disc.code,
         name: disc.name,
@@ -258,18 +259,37 @@ export function StoreProvider({ children }) {
         passing_grade: disc.passingGrade,
         max_absences: disc.maxAbsences,
         recovery_rule: disc.recoveryRule,
-        grades_closed: disc.gradesClosed,
+        grades_closed: disc.status === 'concluida' ? true : Boolean(disc.gradesClosed),
         evaluations: disc.evaluations,
+      };
+
+      // Tenta salvar com o campo status
+      const { error } = await supabase.from('seta_disciplines').upsert({
+        ...basePayload,
+        status: disc.status || 'em_andamento',
       });
 
       if (error) {
-        console.error('Erro ao salvar disciplina no Supabase:', error);
-        setSyncStatus('error');
-        setLastSyncError(`Erro ao salvar matéria: ${error.message}`);
-      } else {
-        setSyncStatus('synced');
-        setLastSyncError(null);
+        // Se a coluna status ainda não existir na tabela remota do Supabase, tenta sem a coluna
+        if (error.message && error.message.toLowerCase().includes('status')) {
+          console.warn('Coluna status não encontrada no Supabase. Salvando compatibilidade...');
+          const { error: errFallback } = await supabase.from('seta_disciplines').upsert(basePayload);
+          if (errFallback) {
+            console.error('Erro ao salvar disciplina no Supabase:', errFallback);
+            setSyncStatus('error');
+            setLastSyncError(`Erro ao salvar matéria: ${errFallback.message}`);
+            return;
+          }
+        } else {
+          console.error('Erro ao salvar disciplina no Supabase:', error);
+          setSyncStatus('error');
+          setLastSyncError(`Erro ao salvar matéria: ${error.message}`);
+          return;
+        }
       }
+
+      setSyncStatus('synced');
+      setLastSyncError(null);
     } catch (e) {
       console.warn('Erro ao salvar disciplina no Supabase:', e);
       setSyncStatus('error');
@@ -584,14 +604,18 @@ export function StoreProvider({ children }) {
 
     /** Cadastrar uma nova matéria do zero e vincular professor */
     addDiscipline(disc) {
+      const fullDisc = {
+        ...disc,
+        status: disc.status || 'em_andamento',
+      };
       update((d) => {
-        d.disciplines.push(disc);
+        d.disciplines.push(fullDisc);
         d.grades[disc.id] = {};
         d.students.forEach((s) => {
           d.grades[disc.id][s.id] = { scores: {}, recovery: null, absences: 0 };
         });
       });
-      syncDisciplineToSupabase(disc);
+      syncDisciplineToSupabase(fullDisc);
     },
 
     /** Atualizar dados de uma matéria existente */
@@ -601,8 +625,32 @@ export function StoreProvider({ children }) {
         const idx = d.disciplines.findIndex((x) => x.id === updatedDisc.id);
         if (idx !== -1) {
           d.disciplines[idx] = { ...d.disciplines[idx], ...updatedDisc };
+          if (updatedDisc.status === 'concluida') {
+            d.disciplines[idx].gradesClosed = true;
+          } else if (updatedDisc.status === 'em_andamento') {
+            d.disciplines[idx].gradesClosed = false;
+          }
           savedDisc = { ...d.disciplines[idx] };
         }
+      });
+      if (savedDisc) {
+        syncDisciplineToSupabase(savedDisc);
+      }
+    },
+
+    /** Alterar rapidamente o status da disciplina (em_andamento, concluida, futura) */
+    setDisciplineStatus(discId, newStatus) {
+      let savedDisc = null;
+      update((d) => {
+        const disc = d.disciplines.find((x) => x.id === discId);
+        if (!disc) return;
+        disc.status = newStatus;
+        if (newStatus === 'concluida') {
+          disc.gradesClosed = true;
+        } else if (newStatus === 'em_andamento') {
+          disc.gradesClosed = false;
+        }
+        savedDisc = { ...disc };
       });
       if (savedDisc) {
         syncDisciplineToSupabase(savedDisc);

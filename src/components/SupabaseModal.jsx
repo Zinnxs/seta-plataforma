@@ -69,7 +69,10 @@ export function SupabaseModal({ open, onClose, onSaveCredentials, syncStatus, la
     }
   };
 
-  const isInvalidPathError = lastSyncError && lastSyncError.includes('Invalid path specified in request URL');
+  const isInvalidPathError = lastSyncError && (
+    lastSyncError.toLowerCase().includes('invalid path') || 
+    lastSyncError.toLowerCase().includes('path specified')
+  );
 
   return (
     <Modal

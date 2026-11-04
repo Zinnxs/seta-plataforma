@@ -12,6 +12,7 @@ export function NewDisciplineAdminModal({ open, onClose, onSave, professors }) {
   const [workload, setWorkload] = useState('60');
   const [schedule, setSchedule] = useState('Segundas, 19h30');
   const [passingGrade, setPassingGrade] = useState('7.0');
+  const [status, setStatus] = useState('em_andamento');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -37,7 +38,8 @@ export function NewDisciplineAdminModal({ open, onClose, onSave, professors }) {
       passingGrade: Number(passingGrade) || 7.0,
       maxAbsences: Math.round((Number(workload) || 60) * 0.25),
       recoveryRule: 'substitui_menor',
-      gradesClosed: false,
+      gradesClosed: status === 'concluida',
+      status,
       evaluations: defaultEvaluations,
     });
 
@@ -114,12 +116,20 @@ export function NewDisciplineAdminModal({ open, onClose, onSave, professors }) {
             />
           </Field>
 
-          <Field label="Horário das Aulas" className="sm:col-span-2">
+          <Field label="Horário das Aulas">
             <Input
               value={schedule}
               onChange={(e) => setSchedule(e.target.value)}
               placeholder="Ex.: Terças, 19h30"
             />
+          </Field>
+
+          <Field label="Status da Matéria">
+            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="em_andamento">Em andamento (Ativa)</option>
+              <option value="concluida">Concluída (Arquivo)</option>
+              <option value="futura">Futura (Planejada)</option>
+            </Select>
           </Field>
         </div>
 

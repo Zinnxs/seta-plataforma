@@ -9,6 +9,7 @@ export function EditDisciplineModal({ open, onClose, discipline, professors, onS
   const [professorId, setProfessorId] = useState('');
   const [workload, setWorkload] = useState('60');
   const [schedule, setSchedule] = useState('');
+  const [status, setStatus] = useState('em_andamento');
 
   useEffect(() => {
     if (discipline) {
@@ -17,6 +18,7 @@ export function EditDisciplineModal({ open, onClose, discipline, professors, onS
       setProfessorId(discipline.professorId || professors[0]?.id || '');
       setWorkload(String(discipline.workload || '60'));
       setSchedule(discipline.schedule || '');
+      setStatus(discipline.status || (discipline.gradesClosed ? 'concluida' : 'em_andamento'));
     }
   }, [discipline, open, professors]);
 
@@ -34,6 +36,8 @@ export function EditDisciplineModal({ open, onClose, discipline, professors, onS
       workload: Number(workload) || 60,
       schedule: schedule.trim(),
       course: 'Bacharel em Teologia',
+      status,
+      gradesClosed: status === 'concluida',
     });
 
     onClose();
@@ -109,12 +113,20 @@ export function EditDisciplineModal({ open, onClose, discipline, professors, onS
             />
           </Field>
 
-          <Field label="Horário das Aulas" className="sm:col-span-2">
+          <Field label="Horário das Aulas">
             <Input
               value={schedule}
               onChange={(e) => setSchedule(e.target.value)}
               placeholder="Ex.: Terças, 19h30"
             />
+          </Field>
+
+          <Field label="Situação / Arquivo">
+            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="em_andamento">Em andamento (Ativa)</option>
+              <option value="concluida">Concluída (Arquivo)</option>
+              <option value="futura">Futura (Planejada)</option>
+            </Select>
           </Field>
         </div>
 

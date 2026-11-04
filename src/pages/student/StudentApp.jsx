@@ -124,9 +124,25 @@ export function StudentApp() {
 }
 
 function StudentReportCard({ student, rows, period }) {
-  const finals = rows.map(r => r.res.final).filter(isNum);
+  // Inicialmente, seleciona disciplinas em andamento e concluídas (exceto futuras)
+  const [selectedDiscIds, setSelectedDiscIds] = useState(() => 
+    rows.filter(r => r.discipline.status !== 'futura').map(r => r.discipline.id)
+  );
+
+  const activeRows = rows.filter(r => selectedDiscIds.includes(r.discipline.id));
+  const finals = activeRows.map(r => r.res.final).filter(isNum);
   const overallAvg = finals.length ? (finals.reduce((a, b) => a + b, 0) / finals.length).toFixed(1).replace('.', ',') : '—';
-  const inRecovery = rows.filter(r => r.res.needsRecovery).length;
+  const inRecovery = activeRows.filter(r => r.res.needsRecovery).length;
+
+  const toggleDiscipline = (id) => {
+    setSelectedDiscIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => setSelectedDiscIds(rows.map(r => r.discipline.id));
+  const selectConcluded = () => setSelectedDiscIds(rows.filter(r => (r.discipline.status || (r.discipline.gradesClosed ? 'concluida' : 'em_andamento')) === 'concluida').map(r => r.discipline.id));
+  const selectActive = () => setSelectedDiscIds(rows.filter(r => (r.discipline.status || (r.discipline.gradesClosed ? 'concluida' : 'em_andamento')) === 'em_andamento').map(r => r.discipline.id));
 
   return (
     <>
@@ -162,16 +178,78 @@ function StudentReportCard({ student, rows, period }) {
         </div>
       </div>
 
+      {/* Seletor de Matérias para o Boletim (Oculto na Impressão) */}
+      <Card className="no-print mb-6 p-4 border border-amber-500/20 bg-stone-50/60 dark:bg-stone-900/40">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200 dark:border-stone-800">
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+              Personalização de Matérias no Boletim
+            </h4>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+              Escolha quais matérias devem constar no boletim e na impressão oficial ({activeRows.length} de {rows.length} selecionadas):
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <button
+              type="button"
+              onClick={selectAll}
+              className="px-2.5 py-1 rounded-lg bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-amber-500 hover:text-stone-950 transition font-medium cursor-pointer"
+            >
+              Todas ({rows.length})
+            </button>
+            <button
+              type="button"
+              onClick={selectConcluded}
+              className="px-2.5 py-1 rounded-lg bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-amber-500 hover:text-stone-950 transition font-medium cursor-pointer"
+            >
+              Concluídas
+            </button>
+            <button
+              type="button"
+              onClick={selectActive}
+              className="px-2.5 py-1 rounded-lg bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-amber-500 hover:text-stone-950 transition font-medium cursor-pointer"
+            >
+              Em Andamento
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {rows.map(({ discipline }) => {
+            const isSelected = selectedDiscIds.includes(discipline.id);
+            const st = discipline.status || (discipline.gradesClosed ? 'concluida' : 'em_andamento');
+            const stBadge = st === 'concluida' ? '🟢' : st === 'futura' ? '⚪' : '🟡';
+            return (
+              <button
+                key={discipline.id}
+                type="button"
+                onClick={() => toggleDiscipline(discipline.id)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition cursor-pointer',
+                  isSelected
+                    ? 'border-amber-500/50 bg-amber-500/15 text-amber-900 dark:text-amber-200 font-semibold'
+                    : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/60 text-stone-400 opacity-60 hover:opacity-100'
+                )}
+              >
+                <span>{isSelected ? '✓' : '○'}</span>
+                <span>{stBadge}</span>
+                <span>{discipline.code} - {discipline.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
         <Card className="p-5">
           <p className="text-xs text-stone-500 dark:text-stone-400">Pontuação Média Acumulada</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{overallAvg} <span className="text-sm font-normal text-stone-400">/ 10,0</span></p>
-          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Média das somas das disciplinas</p>
+          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Média das matérias selecionadas</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs text-stone-500 dark:text-stone-400">Disciplinas Cursadas</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{rows.length}</p>
-          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Neste período letivo</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Disciplinas no Boletim</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{activeRows.length}</p>
+          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">De {rows.length} matriculadas</p>
         </Card>
         <Card className="p-5 col-span-2 sm:col-span-1">
           <p className="text-xs text-stone-500 dark:text-stone-400">Em Recuperação</p>
@@ -179,24 +257,24 @@ function StudentReportCard({ student, rows, period }) {
             {inRecovery}
           </p>
           <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
-            {inRecovery ? 'Soma < 7,0 em alguma matéria' : 'Todas as somas &ge; 7,0 pts'}
+            {inRecovery ? 'Soma < 7,0 nas selecionadas' : 'Todas as somas &ge; 7,0 pts'}
           </p>
         </Card>
       </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Disciplinas Matriculadas</h3>
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Disciplinas do Boletim</h3>
           <span className="text-xs text-stone-400">Nota mínima para aprovação direta: 7,0 pontos somados</span>
         </div>
 
-        {rows.length === 0 ? (
+        {activeRows.length === 0 ? (
           <Card>
-            <EmptyState icon={Award} title="Nenhuma disciplina encontrada" text="Você ainda não possui disciplinas cadastradas neste período." />
+            <EmptyState icon={Award} title="Nenhuma disciplina selecionada" text="Marque uma ou mais disciplinas no quadro acima para visualizá-las no boletim." />
           </Card>
         ) : (
           <div className="space-y-3">
-            {rows.map(({ discipline, professor, rec, res }) => {
+            {activeRows.map(({ discipline, professor, rec, res }) => {
               const maxPossible = pointsTotal(discipline.evaluations);
               return (
                 <Card key={discipline.id} className="p-5">
