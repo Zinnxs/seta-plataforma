@@ -22,7 +22,8 @@ import {
   UserPlus,
   Key,
   Pencil,
-  Database
+  Database,
+  Bell
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
@@ -34,6 +35,7 @@ import { NewUserModal } from '../../components/Modals/NewUserModal';
 import { EditUserModal } from '../../components/Modals/EditUserModal';
 import { NewDisciplineAdminModal } from '../../components/Modals/NewDisciplineAdminModal';
 import { EditDisciplineModal } from '../../components/Modals/EditDisciplineModal';
+import { AdminAnnouncementsView } from './AdminAnnouncementsView';
 import { 
   Badge, 
   Button, 
@@ -59,6 +61,9 @@ export function AdminApp({ onOpenSupabaseConfig }) {
     addDiscipline, 
     updateDiscipline,
     deleteDiscipline,
+    addAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
     isSupabaseConfigured,
     syncStatus,
     lastSyncError,
@@ -94,6 +99,7 @@ export function AdminApp({ onOpenSupabaseConfig }) {
     { id: 'usuarios', label: 'Alunos e Professores', icon: Users, count: data.students.length + data.professors.length },
     { id: 'disciplinas', label: 'Diários e matérias', icon: BookOpen, count: data.disciplines.length },
     { id: 'recuperacao', label: 'Alunos em recuperação', icon: AlertTriangle, count: totalRecoveryCount },
+    { id: 'avisos', label: 'Quadro de avisos', icon: Bell, count: data.announcements.length },
     { id: 'infra_proposta', label: 'Custos e Servidor NAS', icon: Server },
   ];
 
@@ -165,6 +171,15 @@ export function AdminApp({ onOpenSupabaseConfig }) {
           grades={data.grades}
           students={data.students}
           professors={data.professors}
+        />
+      )}
+
+      {page === 'avisos' && (
+        <AdminAnnouncementsView
+          announcements={data.announcements}
+          onAdd={addAnnouncement}
+          onUpdate={updateAnnouncement}
+          onDelete={deleteAnnouncement}
         />
       )}
 

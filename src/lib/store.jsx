@@ -176,7 +176,7 @@ export function StoreProvider({ children }) {
             grades,
             assignments,
             lessons,
-            announcements: announcements.length > 0 ? announcements : prev.announcements,
+            announcements: anErr ? prev.announcements : announcements,
           }));
           setSyncStatus('synced');
           setLastSyncError(null);
@@ -435,6 +435,49 @@ export function StoreProvider({ children }) {
       }
     } catch (e) {
       console.warn('Erro ao deletar aula no Supabase:', e);
+      setSyncStatus('error');
+    }
+  };
+
+  const syncAnnouncementToSupabase = async (ann) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_announcements').upsert({
+        id: ann.id,
+        date: ann.date,
+        author: ann.author,
+        title: ann.title,
+        content: ann.content,
+        important: Boolean(ann.important),
+      });
+      if (error) {
+        console.error('Erro ao salvar comunicado no Supabase:', error);
+        setSyncStatus('error');
+        setLastSyncError(`Erro no quadro de avisos: ${error.message}`);
+      } else {
+        setSyncStatus('synced');
+        setLastSyncError(null);
+      }
+    } catch (e) {
+      console.warn('Erro ao salvar comunicado no Supabase:', e);
+      setSyncStatus('error');
+    }
+  };
+
+  const deleteAnnouncementFromSupabase = async (annId) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_announcements').delete().eq('id', annId);
+      if (error) {
+        console.error('Erro ao excluir comunicado no Supabase:', error);
+        setSyncStatus('error');
+      } else {
+        setSyncStatus('synced');
+      }
+    } catch (e) {
+      console.warn('Erro ao excluir comunicado no Supabase:', e);
       setSyncStatus('error');
     }
   };
@@ -806,6 +849,26 @@ export function StoreProvider({ children }) {
       update((d) => {
         d.announcements.unshift(ann);
       });
+      syncAnnouncementToSupabase(ann);
+    },
+
+    updateAnnouncement(updated) {
+      let toSync = null;
+      update((d) => {
+        const idx = d.announcements.findIndex((x) => x.id === updated.id);
+        if (idx !== -1) {
+          d.announcements[idx] = { ...d.announcements[idx], ...updated };
+          toSync = { ...d.announcements[idx] };
+        }
+      });
+      if (toSync) syncAnnouncementToSupabase(toSync);
+    },
+
+    deleteAnnouncement(annId) {
+      update((d) => {
+        d.announcements = d.announcements.filter((x) => x.id !== annId);
+      });
+      deleteAnnouncementFromSupabase(annId);
     },
 
     saveSupabaseCredentials,

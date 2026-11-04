@@ -707,20 +707,45 @@ function StudentAnnouncements({ announcements }) {
     <>
       <PageHeader
         title="Mural de Avisos Acadêmicos"
-        subtitle="Comunicados oficiais da direção e secretaria do Seminário Teológico Aliança."
+        subtitle="Comunicados oficiais emitidos pela Direção e Secretaria do Seminário Teológico Aliança."
       />
-      <div className="space-y-4">
-        {announcements.map(ann => (
-          <Card key={ann.id} className="p-5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{ann.author}</span>
-              <span className="text-xs text-stone-400">{fmtDate(ann.date)}</span>
-            </div>
-            <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">{ann.title}</h3>
-            <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">{ann.content}</p>
-          </Card>
-        ))}
-      </div>
+      {announcements.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={Bell}
+            title="Nenhum comunicado no mural"
+            text="Não há avisos recentes publicados pela direção institucional."
+          />
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {announcements.map((ann) => (
+            <Card key={ann.id} className="p-5 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 dark:border-stone-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 px-2 py-0.5 rounded-md">
+                    {ann.author || 'Direção Geral'}
+                  </span>
+                  {ann.important && (
+                    <Badge tone="red" className="gap-1 font-medium">
+                      <AlertCircle className="h-3 w-3" /> Urgente
+                    </Badge>
+                  )}
+                </div>
+                <span className="flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500">
+                  <Calendar className="h-3 w-3" /> {fmtDate(ann.date)}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">{ann.title}</h3>
+                <p className="mt-1 text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-line">
+                  {ann.content}
+                </p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </>
   );
 }
