@@ -41,7 +41,7 @@ export function Login() {
             <img
               src="/portal_seta_crest.jpg"
               alt="Brasão Oficial Portal SETA"
-              className="h-full w-full rounded-full object-cover"
+              className="h-full w-full rounded-full object-contain"
             />
           </div>
 
@@ -83,7 +83,7 @@ export function Login() {
           <div className="w-full max-w-sm">
             <div className="text-center lg:text-left mb-8">
               <div className="mx-auto lg:mx-0 mb-4 h-14 w-14 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md lg:hidden">
-                <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-cover" />
+                <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-contain" />
               </div>
               <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Acesso ao <span className="text-gold-gradient">Portal SETA</span>

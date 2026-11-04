@@ -90,7 +90,7 @@ class ErrorBoundary extends React.Component {
         <div className="min-h-screen bg-[#070d1e] text-white flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center space-y-5 rounded-2xl border border-amber-500/25 bg-[#091024] p-8 shadow-2xl">
             <div className="mx-auto h-16 w-16 overflow-hidden rounded-full ring-2 ring-amber-400/50 p-1 bg-[#070d1e]">
-              <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-cover" />
+              <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-contain" />
             </div>
             <h2 className="font-serif text-2xl font-bold text-slate-100">Portal SETA</h2>
             <p className="text-sm text-slate-300">

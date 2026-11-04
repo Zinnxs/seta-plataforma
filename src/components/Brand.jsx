@@ -9,14 +9,14 @@ export function Brand({ className, showSubtitle = true, size = 'md' }) {
     <div className={cn('flex items-center gap-3', className)}>
       <div 
         className={cn(
-          'relative shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md shadow-amber-950/20 bg-slate-900',
+          'relative shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md shadow-amber-950/20 bg-[#070d1e]',
           isLarge ? 'h-14 w-14' : 'h-10 w-10'
         )}
       >
         <img 
           src="/portal_seta_symbol.png" 
           alt="Selo Oficial SETA" 
-          className="h-full w-full object-cover select-none" 
+          className="h-full w-full object-contain select-none" 
         />
       </div>
       <div className="leading-tight">
