@@ -47,7 +47,8 @@ import {
   Tabs,
   Callout,
   Avatar,
-  EmptyState
+  EmptyState,
+  cn
 } from '../../components/ui';
 
 export function AdminApp({ onOpenSupabaseConfig }) {

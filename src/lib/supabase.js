@@ -108,11 +108,17 @@ export const { url: supabaseUrl, key: supabaseAnonKey, source: credentialsSource
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = (() => {
+  if (!isSupabaseConfigured) return null;
+  try {
+    return createClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: true },
-    })
-  : null;
+    });
+  } catch (err) {
+    console.error('Falha ao instanciar cliente do Supabase:', err);
+    return null;
+  }
+})();
 
 /** Salva credenciais do Supabase no navegador e recarrega */
 export function saveSupabaseCredentials(url, key) {

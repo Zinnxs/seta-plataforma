@@ -7,7 +7,17 @@
  */
 import { typeLabel } from '../data/seed';
 
-export const isNum = (v) => typeof v === 'number' && !Number.isNaN(v);
+export const isNum = (v) => {
+  if (v === null || v === undefined || v === '') return false;
+  const n = Number(String(v).replace(',', '.'));
+  return !Number.isNaN(n);
+};
+
+export const toNum = (v) => {
+  if (!isNum(v)) return null;
+  return Number(String(v).replace(',', '.'));
+};
+
 const r1 = (v) => Math.round(v * 10) / 10;
 
 export const STATUS = {
@@ -33,10 +43,12 @@ export function computeResult(disc, record) {
   const scores = rec.scores || {};
   const pass = Number(disc.passingGrade) || 7.0;
   const maxPossible = pointsTotal(evals) || 10.0;
+  const recoveryScore = toNum(rec.recovery);
 
   const base = {
     sum: null,
     final: null,
+    total: null,
     maxPossible,
     status: 'sem_notas',
     needsRecovery: false,
@@ -52,7 +64,7 @@ export function computeResult(disc, record) {
   if (!evals.length || !filled.length) return withAbsences(base);
 
   // Soma direta dos pontos conquistados
-  const currentSum = r1(filled.reduce((s, e) => s + scores[e.id], 0));
+  const currentSum = r1(filled.reduce((s, e) => s + (toNum(scores[e.id]) || 0), 0));
 
   // Se ainda faltam avaliações a serem lançadas
   if (filled.length < evals.length) {
@@ -60,6 +72,7 @@ export function computeResult(disc, record) {
       ...base,
       sum: currentSum,
       final: currentSum,
+      total: currentSum,
       status: 'em_andamento',
     });
   }
@@ -70,16 +83,18 @@ export function computeResult(disc, record) {
       ...base,
       sum: currentSum,
       final: currentSum,
+      total: currentSum,
       status: currentSum >= 9.0 ? 'distincao' : 'aprovado',
     });
   }
 
   // Soma < 7,0: aluno precisa de recuperação
-  if (!isNum(rec.recovery)) {
+  if (recoveryScore === null) {
     return withAbsences({
       ...base,
       sum: currentSum,
       final: currentSum,
+      total: currentSum,
       status: 'recuperacao',
       needsRecovery: true,
     });
@@ -89,30 +104,28 @@ export function computeResult(disc, record) {
   let finalScore = currentSum;
 
   if (disc.recoveryRule === 'substitui_menor') {
-    // A nota da recuperação entra no lugar da menor pontuação obtida
-    // Encontra a avaliação com pior pontuação (em pontos ou proporcionalmente)
-    const worst = [...evals].sort((a, b) => (scores[a.id] ?? 0) - (scores[b.id] ?? 0))[0];
-    const oldScore = scores[worst.id] ?? 0;
-    if (rec.recovery > oldScore) {
-      finalScore = r1(currentSum - oldScore + rec.recovery);
+    const worst = [...evals].sort((a, b) => (toNum(scores[a.id]) ?? 0) - (toNum(scores[b.id]) ?? 0))[0];
+    const oldScore = toNum(scores[worst.id]) ?? 0;
+    if (recoveryScore > oldScore) {
+      finalScore = r1(currentSum - oldScore + recoveryScore);
     }
   } else if (disc.recoveryRule === 'prova_substitutiva') {
-    // Prova geral de recuperação (vale até 10,0 pontos): se tirar >= pass (7,0), é aprovado na recuperação
-    if (rec.recovery >= pass) {
-      finalScore = r1(rec.recovery);
+    if (recoveryScore >= pass) {
+      finalScore = r1(recoveryScore);
     } else {
-      finalScore = r1(Math.max(currentSum, rec.recovery));
+      finalScore = r1(Math.max(currentSum, recoveryScore));
     }
   } else if (disc.recoveryRule === 'soma_complementar') {
-    // Pontos somados complementarmente com teto na nota de corte (7,0)
-    finalScore = r1(Math.min(pass, currentSum + rec.recovery));
+    finalScore = r1(Math.min(pass, currentSum + recoveryScore));
   }
 
   return withAbsences({
     ...base,
     sum: currentSum,
     final: finalScore,
+    total: finalScore,
     status: finalScore >= pass ? 'aprovado_rec' : 'reprovado',
+    needsRecovery: false,
     recoveryApplied: true,
   });
 }

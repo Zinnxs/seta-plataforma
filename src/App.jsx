@@ -70,12 +70,72 @@ function MainRouter() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Portal SETA - Erro capturado pela ErrorBoundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#070d1e] text-white flex items-center justify-center p-6">
+          <div className="max-w-md w-full text-center space-y-5 rounded-2xl border border-amber-500/25 bg-[#091024] p-8 shadow-2xl">
+            <div className="mx-auto h-16 w-16 overflow-hidden rounded-full ring-2 ring-amber-400/50 p-1 bg-[#070d1e]">
+              <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-cover" />
+            </div>
+            <h2 className="font-serif text-2xl font-bold text-slate-100">Portal SETA</h2>
+            <p className="text-sm text-slate-300">
+              Ocorreu uma pequena instabilidade no carregamento da tela.
+            </p>
+            {this.state.error?.message && (
+              <p className="text-xs font-mono bg-black/40 text-rose-300 p-3 rounded-lg overflow-x-auto text-left">
+                {this.state.error.message}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="w-full py-2.5 px-4 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 transition cursor-pointer"
+              >
+                Recarregar Portal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('seta-session-v5');
+                  window.location.reload();
+                }}
+                className="w-full py-2 px-4 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                Sair da Sessão Atual
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <ThemeProvider>
-      <StoreProvider>
-        <MainRouter />
-      </StoreProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <StoreProvider>
+          <MainRouter />
+        </StoreProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

@@ -83,8 +83,9 @@ export function Badge({ tone = 'neutral', className, children }) {
   );
 }
 
-export function StatusBadge({ status }) {
-  const s = STATUS[status] || STATUS.sem_notas;
+export function StatusBadge({ status, result, res }) {
+  const resolvedStatus = status || result?.status || res?.status;
+  const s = STATUS[resolvedStatus] || STATUS.sem_notas;
   return <Badge tone={s.tone}>{s.label}</Badge>;
 }
 

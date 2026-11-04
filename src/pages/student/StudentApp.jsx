@@ -39,7 +39,8 @@ import {
   StatusBadge, 
   Tabs,
   Callout,
-  Textarea
+  Textarea,
+  cn
 } from '../../components/ui';
 import { LessonList } from '../../components/LessonList';
 
@@ -130,8 +131,8 @@ function StudentReportCard({ student, rows, period }) {
   );
 
   const activeRows = rows.filter(r => selectedDiscIds.includes(r.discipline.id));
-  const finals = activeRows.map(r => r.res.final).filter(isNum);
-  const overallAvg = finals.length ? (finals.reduce((a, b) => a + b, 0) / finals.length).toFixed(1).replace('.', ',') : '—';
+  const finals = activeRows.map(r => r.res.final ?? r.res.sum ?? r.res.total).filter(isNum);
+  const overallAvg = finals.length ? (finals.reduce((a, b) => a + Number(b), 0) / finals.length).toFixed(1).replace('.', ',') : '—';
   const inRecovery = activeRows.filter(r => r.res.needsRecovery).length;
 
   const toggleDiscipline = (id) => {
@@ -293,12 +294,12 @@ function StudentReportCard({ student, rows, period }) {
                       <div className="text-right">
                         <span className="text-xs text-stone-400 block">Pontos Somados</span>
                         <span className="text-xl font-bold tabular-nums text-stone-900 dark:text-stone-50">
-                          {fmtGrade(res.total)} <span className="text-xs font-normal text-stone-400">/ {maxPossible.toFixed(1).replace('.', ',')}</span>
+                          {fmtGrade(res.final ?? res.sum ?? res.total)} <span className="text-xs font-normal text-stone-400">/ {maxPossible.toFixed(1).replace('.', ',')}</span>
                         </span>
                       </div>
 
                       <div>
-                        <StatusBadge result={res} />
+                        <StatusBadge status={res.status} result={res} />
                       </div>
                     </div>
                   </div>
@@ -317,6 +318,15 @@ function StudentReportCard({ student, rows, period }) {
                         </div>
                       );
                     })}
+
+                    {isNum(rec.recovery) && (
+                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
+                        <span className="text-amber-700 dark:text-amber-300 block truncate font-medium">Recuperação</span>
+                        <span className="text-sm font-bold tabular-nums text-amber-900 dark:text-amber-100 mt-0.5 block">
+                          {fmtGrade(rec.recovery)} <span className="text-[11px] font-normal text-amber-600 dark:text-amber-400"> / 10,0</span>
+                        </span>
+                      </div>
+                    )}
 
                     <div className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-100 dark:border-stone-800">
                       <span className="text-stone-400 block">Faltas Registradas</span>
