@@ -1,0 +1,53 @@
+name: Backup Supabase para o Google Drive
+
+on:
+  schedule:
+    # Executa todos os dias às 03:00 UTC (00:00 Horário de Brasília)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Permite disparar manualmente pelo botão "Run workflow" no GitHub
+
+jobs:
+  backup:
+    name: Backup do Banco de Dados do Portal SETA
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Executar Extração do Banco de Dados (Supabase)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node scripts/backup-supabase.js
+
+      - name: Armazenar Backup nos Artefatos do GitHub (Retenção de 30 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-seta-${{ github.run_number }}
+          path: backups/
+          retention-days: 30
+
+      # Opcional: Enviar diretamente para o Google Drive via Rclone
+      - name: Enviar para o Google Drive via Rclone
+        if: env.RCLONE_CONFIG_BASE64 != ''
+        env:
+          RCLONE_CONFIG_BASE64: ${{ secrets.RCLONE_CONFIG_BASE64 }}
+          GOOGLE_DRIVE_FOLDER_ID: "1EzSi1xvv-UyhHTsrn3N4JqXzpNJ1LoIr"
+        run: |
+          echo "Configurando Rclone..."
+          mkdir -p ~/.config/rclone
+          echo "$RCLONE_CONFIG_BASE64" | base64 -d > ~/.config/rclone/rclone.conf
+          rclone copy backups/ gdrive: --drive-root-folder-id="$GOOGLE_DRIVE_FOLDER_ID" -v
+          echo "Backup enviado com sucesso para o Google Drive!"
