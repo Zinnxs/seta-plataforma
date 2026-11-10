@@ -59,15 +59,30 @@ $driveFolderId = "1EzSi1xvv-UyhHTsrn3N4JqXzpNJ1LoIr"
 
 Write-Host "`n[3/3] Enviando para o Google Drive (Pasta: 02_Banco_de_Dados_Supabase)..." -ForegroundColor Green
 
-# Tenta usar o gdrive CLI se disponível
+# Tenta usar o gdrive CLI se disponível (no PATH ou no Antigravity)
 $gdriveCmd = Get-Command "gdrive" -ErrorAction SilentlyContinue
+$gdrivePath = if ($gdriveCmd) { $gdriveCmd.Source } else { $null }
 
-if ($gdriveCmd) {
-    Write-Host "   Enviando arquivo SQL..." -ForegroundColor Cyan
-    gdrive mutate upload "$($latestSql.FullName)" --parent $driveFolderId
+if (-not $gdrivePath) {
+    $candidates = @(
+        "$env:USERPROFILE\.gemini\antigravity\bin\gdrive.cmd",
+        "$env:USERPROFILE\.gemini\config\plugins\gdrive\skills\gdrive\scripts\gdrive.cmd",
+        "$env:LOCALAPPDATA\.gemini\antigravity\bin\gdrive.cmd"
+    )
+    foreach ($cand in $candidates) {
+        if (Test-Path $cand) {
+            $gdrivePath = $cand
+            break
+        }
+    }
+}
+
+if ($gdrivePath) {
+    Write-Host "   Enviando arquivo SQL para o Google Drive..." -ForegroundColor Cyan
+    & $gdrivePath mutate upload "$($latestSql.FullName)" --parent $driveFolderId
     
-    Write-Host "   Enviando arquivo JSON..." -ForegroundColor Cyan
-    gdrive mutate upload "$($latestJson.FullName)" --parent $driveFolderId
+    Write-Host "   Enviando arquivo JSON para o Google Drive..." -ForegroundColor Cyan
+    & $gdrivePath mutate upload "$($latestJson.FullName)" --parent $driveFolderId
     
     Write-Host "`n✅ BACKUP CONCLUÍDO COM SUCESSO NO GOOGLE DRIVE!" -ForegroundColor Green
 } else {
