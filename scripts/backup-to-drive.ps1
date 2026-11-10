@@ -13,6 +13,25 @@ Write-Host "==========================================================" -Foregro
 Write-Host "   BACKUP DO BANCO SUPABASE -> GOOGLE DRIVE (PORTAL SETA) " -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 
+# Verifica se o arquivo .env existe; se não existir, permite configurar interativamente
+$envFile = "$rootDir\.env"
+$envLocalFile = "$rootDir\.env.local"
+if (-not (Test-Path $envFile) -and -not (Test-Path $envLocalFile) -and -not $env:VITE_SUPABASE_URL) {
+    Write-Host "`n⚠️  Arquivo .env não encontrado no projeto." -ForegroundColor Yellow
+    Write-Host "   O backup precisa da URL e da Chave do seu banco Supabase." -ForegroundColor Gray
+    Write-Host "   Deseja configurar o arquivo .env agora? (S/N): " -NoNewline -ForegroundColor Cyan
+    $answer = Read-Host
+    if ($answer -match "^[sSyY]") {
+        $supabaseUrl = Read-Host "`n👉 Cole a URL do seu Supabase (ex: https://xxxx.supabase.co)"
+        $supabaseKey = Read-Host "👉 Cole a Chave Anon (anon public key do Supabase)"
+        if ($supabaseUrl -and $supabaseKey) {
+            $content = "VITE_SUPABASE_URL=$($supabaseUrl.Trim())`nVITE_SUPABASE_ANON_KEY=$($supabaseKey.Trim())`n"
+            Set-Content -Path $envFile -Value $content -Encoding UTF8
+            Write-Host "✅ Arquivo .env criado com sucesso em: $envFile`n" -ForegroundColor Green
+        }
+    }
+}
+
 # 1. Executa o script Node.js de extração do Supabase
 Write-Host "`n[1/3] Extraindo tabelas e dados do Supabase..." -ForegroundColor Green
 node "$scriptDir\backup-supabase.js"
