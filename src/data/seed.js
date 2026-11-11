@@ -41,6 +41,46 @@ export const ruleLabel = (id) => RECOVERY_RULES.find((r) => r.id === id)?.label 
 /** Curso único ofertado pelo seminário */
 export const COURSES = ['Bacharel em Teologia'];
 
+/** Lista padrão sugerida de documentos de matrícula */
+export const DEFAULT_ENROLLMENT_DOCUMENTS = [
+  {
+    id: 'doc-rg-cnh',
+    title: 'Documento de Identidade com Foto (RG ou CNH)',
+    description: 'Frente e verso legível em formato PDF ou imagem nítida.',
+    required: true,
+  },
+  {
+    id: 'doc-cpf',
+    title: 'Cadastro de Pessoa Física (CPF)',
+    description: 'Necessário caso o número do CPF não conste no RG/CNH.',
+    required: false,
+  },
+  {
+    id: 'doc-residencia',
+    title: 'Comprovante de Residência Recente',
+    description: 'Conta de luz, água ou telefone emitida nos últimos 90 dias.',
+    required: true,
+  },
+  {
+    id: 'doc-historico',
+    title: 'Histórico Escolar ou Certificado do Ensino Médio',
+    description: 'Comprovante de conclusão do Ensino Médio ou curso superior.',
+    required: true,
+  },
+  {
+    id: 'doc-carta-pastoral',
+    title: 'Carta de Recomendação Pastoral',
+    description: 'Carta assinada pelo pastor da sua igreja local atestando sua membresia.',
+    required: true,
+  },
+  {
+    id: 'doc-foto-3x4',
+    title: 'Foto 3x4 Recente',
+    description: 'Foto recente com fundo neutro para a carteirinha e ficha acadêmica.',
+    required: true,
+  },
+];
+
 export function createSeed() {
   return {
     institution: {
@@ -65,6 +105,12 @@ export function createSeed() {
     grades: {},
     assignments: [],
     lessons: [],
+    enrollmentDocsConfig: {
+      id: 'global-config',
+      requiredYears: ['2027'],
+      documents: DEFAULT_ENROLLMENT_DOCUMENTS,
+    },
+    studentDocuments: {},
     announcements: [
       {
         id: 'ann-init',

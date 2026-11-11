@@ -9,15 +9,26 @@ export function NewUserModal({ open, onClose, onSave, defaultRole = 'aluno' }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('seta123');
   const [title, setTitle] = useState('Prof.');
-  const [enrollment, setEnrollment] = useState(`2026-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [enrollment, setEnrollment] = useState(`2027-${Math.floor(1000 + Math.random() * 9000)}`);
   const [course, setCourse] = useState(COURSES[0]);
-  const [year, setYear] = useState('1º ano');
+  const [turmaOption, setTurmaOption] = useState('2027');
+  const [customYear, setCustomYear] = useState('');
+
+  const handleTurmaChange = (val) => {
+    setTurmaOption(val);
+    if (val === '2027') {
+      setEnrollment(`2027-${Math.floor(1000 + Math.random() * 9000)}`);
+    } else if (val === '2026') {
+      setEnrollment(`2026-${Math.floor(1000 + Math.random() * 9000)}`);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
 
     const id = `${role === 'professor' ? 'prof' : 'stu'}-${Date.now().toString(36)}`;
+    const finalYear = turmaOption === 'custom' ? (customYear.trim() || '2027') : turmaOption;
 
     onSave({
       id,
@@ -28,7 +39,7 @@ export function NewUserModal({ open, onClose, onSave, defaultRole = 'aluno' }) {
       title: role === 'professor' ? title : null,
       enrollment: role === 'aluno' ? enrollment : null,
       course: role === 'aluno' ? course : null,
-      year: role === 'aluno' ? year : null,
+      year: role === 'aluno' ? finalYear : null,
     });
 
     onClose();
@@ -119,23 +130,47 @@ export function NewUserModal({ open, onClose, onSave, defaultRole = 'aluno' }) {
         </div>
 
         {role === 'aluno' && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            <Field label="Matrícula">
-              <Input
-                required
-                value={enrollment}
-                onChange={(e) => setEnrollment(e.target.value)}
-              />
-            </Field>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <Field label="Matrícula">
+                <Input
+                  required
+                  value={enrollment}
+                  onChange={(e) => setEnrollment(e.target.value)}
+                />
+              </Field>
 
-            <Field label="Curso" className="sm:col-span-2">
+              <Field label="Ano Letivo / Turma" hint="Define envio de documentos" className="sm:col-span-2">
+                <Select
+                  value={turmaOption}
+                  onChange={(e) => handleTurmaChange(e.target.value)}
+                >
+                  <option value="2027">Turma 2027 (Ingressante)</option>
+                  <option value="2026">Turma 2026</option>
+                  <option value="custom">Outra turma / ano específico...</option>
+                </Select>
+              </Field>
+            </div>
+
+            {turmaOption === 'custom' && (
+              <Field label="Digite o Ano Letivo / Turma Customizada" hint="Ex: 2028, 2º ano, etc.">
+                <Input
+                  required
+                  placeholder="Ex: 2028"
+                  value={customYear}
+                  onChange={(e) => setCustomYear(e.target.value)}
+                />
+              </Field>
+            )}
+
+            <Field label="Curso">
               <Input
                 disabled
                 value="Bacharel em Teologia (Curso Único)"
                 className="bg-stone-50 dark:bg-stone-800/50 cursor-not-allowed text-stone-600 dark:text-stone-300 font-medium"
               />
             </Field>
-          </div>
+          </>
         )}
 
         <div className="flex justify-end gap-2 pt-4 border-t border-stone-200 dark:border-stone-800">

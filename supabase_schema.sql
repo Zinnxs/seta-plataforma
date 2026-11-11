@@ -100,6 +100,45 @@ CREATE TABLE IF NOT EXISTS seta_announcements (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 7. Tabela de Formulário de Pré-Cadastro de Alunos (Forms)
+CREATE TABLE IF NOT EXISTS seta_pre_registrations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  password TEXT NOT NULL,
+  phone TEXT,
+  year TEXT DEFAULT '1º ano',
+  course TEXT DEFAULT 'Bacharel em Teologia',
+  turma TEXT DEFAULT 'Turma 2027',
+  status TEXT DEFAULT 'pendente',
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 8. Tabela de Configuração Global de Documentos de Matrícula
+CREATE TABLE IF NOT EXISTS seta_enrollment_docs_config (
+  id TEXT PRIMARY KEY DEFAULT 'global-config',
+  required_years JSONB NOT NULL DEFAULT '["2027"]'::jsonb,
+  documents JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 9. Tabela de Documentos de Matrícula Enviados pelos Alunos
+CREATE TABLE IF NOT EXISTS seta_student_documents (
+  id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL,
+  doc_type_id TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_size INT,
+  status TEXT NOT NULL DEFAULT 'em_analise', -- 'em_analise', 'aprovado', 'rejeitado'
+  notes TEXT,
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  reviewed_by TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE (student_id, doc_type_id)
+);
+
 -- =========================================================================
 -- PERMISSÕES E POLÍTICAS DE ACESSO LIVRE (RLS PARA ANON E AUTHENTICATED)
 -- =========================================================================
@@ -114,6 +153,9 @@ ALTER TABLE seta_grades ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seta_pre_registrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seta_enrollment_docs_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seta_student_documents ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public access seta_users" ON seta_users;
 CREATE POLICY "Public access seta_users" ON seta_users FOR ALL TO public USING (true) WITH CHECK (true);
@@ -133,11 +175,20 @@ CREATE POLICY "Public access seta_lessons" ON seta_lessons FOR ALL TO public USI
 DROP POLICY IF EXISTS "Public access seta_announcements" ON seta_announcements;
 CREATE POLICY "Public access seta_announcements" ON seta_announcements FOR ALL TO public USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public access seta_pre_registrations" ON seta_pre_registrations;
+CREATE POLICY "Public access seta_pre_registrations" ON seta_pre_registrations FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public access seta_enrollment_docs_config" ON seta_enrollment_docs_config;
+CREATE POLICY "Public access seta_enrollment_docs_config" ON seta_enrollment_docs_config FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public access seta_student_documents" ON seta_student_documents;
+CREATE POLICY "Public access seta_student_documents" ON seta_student_documents FOR ALL TO public USING (true) WITH CHECK (true);
+
 -- =========================================================================
 -- BUCKET DE ARMAZENAMENTO DE ARQUIVOS (SUPABASE STORAGE)
 -- =========================================================================
 
--- Criação do Bucket 'seta-trabalhos' público para anexos reais dos alunos
+-- Criação do Bucket 'seta-trabalhos' público para anexos e documentos reais
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'seta-trabalhos', 
@@ -149,7 +200,10 @@ VALUES (
     'application/msword', 
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
     'application/octet-stream', 
-    'text/plain'
+    'text/plain',
+    'image/jpeg',
+    'image/png',
+    'image/webp'
   ]
 )
 ON CONFLICT (id) DO UPDATE SET

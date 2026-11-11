@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
+import { StudentDocumentsView } from './StudentDocumentsView';
 import { computeResult, describeFormula, isNum, pointsTotal } from '../../lib/grades';
 import { fmtDate, fmtDateTime, fmtGrade, fmtSize, isPast, personName } from '../../lib/format';
 import { typeLabel } from '../../data/seed';
@@ -70,12 +71,30 @@ export function StudentApp() {
 
   const pendingAssignments = assignments.filter(a => !a.submission);
 
+  // Verificação de obrigatoriedade de envio de documentos de matrícula por ano letivo
+  const docsConfig = data.enrollmentDocsConfig || { requiredYears: ['2027'], documents: [] };
+  const studentYear = String(student.year || '2027');
+  const isRequiredYear = (docsConfig.requiredYears || []).some(yr => studentYear.includes(yr)) || (docsConfig.requiredYears || []).includes('todas');
+
+  const studentDocs = (data.studentDocuments && data.studentDocuments[student.id]) || {};
+  const requiredDocs = (docsConfig.documents || []).filter(d => d.required);
+  const pendingDocsCount = requiredDocs.filter(d => !studentDocs[d.id] || studentDocs[d.id].status === 'rejeitado').length;
+
   const nav = [
     { id: 'boletim', label: 'Boletim oficial', icon: Award },
     { id: 'trabalhos', label: 'Trabalhos', icon: FileText, count: pendingAssignments.length },
     { id: 'aulas', label: 'Aulas e materiais', icon: Video },
     { id: 'avisos', label: 'Mural de avisos', icon: Bell },
   ];
+
+  if (isRequiredYear) {
+    nav.push({
+      id: 'documentos',
+      label: 'Documentos de matrícula',
+      icon: FileCheck,
+      count: pendingDocsCount > 0 ? pendingDocsCount : undefined,
+    });
+  }
 
   return (
     <Layout nav={nav} page={page} onNavigate={setPage} roleLabel="Aluno">
@@ -85,6 +104,10 @@ export function StudentApp() {
           rows={studentRows} 
           period={data.institution.period} 
         />
+      )}
+
+      {page === 'documentos' && isRequiredYear && (
+        <StudentDocumentsView student={student} />
       )}
 
       {page === 'trabalhos' && (

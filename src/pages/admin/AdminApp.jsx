@@ -23,7 +23,8 @@ import {
   Key,
   Pencil,
   Database,
-  Bell
+  Bell,
+  FileCheck
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
@@ -36,6 +37,7 @@ import { EditUserModal } from '../../components/Modals/EditUserModal';
 import { NewDisciplineAdminModal } from '../../components/Modals/NewDisciplineAdminModal';
 import { EditDisciplineModal } from '../../components/Modals/EditDisciplineModal';
 import { AdminAnnouncementsView } from './AdminAnnouncementsView';
+import { AdminEnrollmentDocsView } from './AdminEnrollmentDocsView';
 import { 
   Badge, 
   Button, 
@@ -96,9 +98,20 @@ export function AdminApp({ onOpenSupabaseConfig }) {
   const totalRecoveryCount = allStats.reduce((acc, curr) => acc + curr.stats.recovery, 0);
   const closedDiariesCount = data.disciplines.filter(d => d.gradesClosed).length;
 
+  // Contagem de alunos com documentos aguardando análise da Direção
+  const studentDocuments = data.studentDocuments || {};
+  let pendingDocsReviewCount = 0;
+  (data.students || []).forEach((s) => {
+    const sDocs = studentDocuments[s.id] || {};
+    if (Object.values(sDocs).some((doc) => doc.status === 'em_analise')) {
+      pendingDocsReviewCount++;
+    }
+  });
+
   const nav = [
     { id: 'visao_geral', label: 'Visão geral', icon: Building2 },
     { id: 'usuarios', label: 'Alunos e Professores', icon: Users, count: data.students.length + data.professors.length },
+    { id: 'documentos', label: 'Documentos de Matrícula', icon: FileCheck, count: pendingDocsReviewCount || undefined },
     { id: 'disciplinas', label: 'Diários e matérias', icon: BookOpen, count: data.disciplines.length },
     { id: 'recuperacao', label: 'Alunos em recuperação', icon: AlertTriangle, count: totalRecoveryCount },
     { id: 'avisos', label: 'Quadro de avisos', icon: Bell, count: data.announcements.length },
@@ -140,6 +153,10 @@ export function AdminApp({ onOpenSupabaseConfig }) {
           }}
           onDeleteUser={deleteUser}
         />
+      )}
+
+      {page === 'documentos' && (
+        <AdminEnrollmentDocsView />
       )}
 
       {page === 'disciplinas' && (
@@ -628,7 +645,7 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
                         <span className="text-xs text-brand-600 dark:text-brand-400 font-bold font-mono">({s.enrollment})</span>
                       </div>
                       <p className="text-xs text-stone-400 mt-0.5">
-                        Bacharel em Teologia · <span className="font-mono">{s.email}</span> · {s.year || '1º ano'}
+                        Bacharel em Teologia · <span className="font-mono">{s.email}</span> · <span className="font-semibold text-stone-600 dark:text-stone-300">{s.year ? (String(s.year).includes('Turma') ? s.year : `Turma ${s.year}`) : 'Turma 2027'}</span>
                       </p>
                     </div>
                   </div>

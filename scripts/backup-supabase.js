@@ -59,7 +59,9 @@ const TABLES = [
   'seta_assignments',
   'seta_lessons',
   'seta_announcements',
-  'seta_pre_registrations'
+  'seta_pre_registrations',
+  'seta_enrollment_docs_config',
+  'seta_student_documents'
 ];
 
 async function runBackup() {

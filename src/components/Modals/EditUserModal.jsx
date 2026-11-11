@@ -9,7 +9,8 @@ export function EditUserModal({ open, onClose, user, onSave }) {
   const [password, setPassword] = useState('');
   const [title, setTitle] = useState('Prof.');
   const [enrollment, setEnrollment] = useState('');
-  const [year, setYear] = useState('1º ano');
+  const [turmaOption, setTurmaOption] = useState('2027');
+  const [customYear, setCustomYear] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -18,7 +19,18 @@ export function EditUserModal({ open, onClose, user, onSave }) {
       setPassword(user.password || '');
       setTitle(user.title || 'Prof.');
       setEnrollment(user.enrollment || '');
-      setYear(user.year || '1º ano');
+      
+      const currentYear = user.year || '2027';
+      if (currentYear === '2027' || currentYear.includes('2027')) {
+        setTurmaOption('2027');
+        setCustomYear('');
+      } else if (currentYear === '2026' || currentYear.includes('2026')) {
+        setTurmaOption('2026');
+        setCustomYear('');
+      } else {
+        setTurmaOption('custom');
+        setCustomYear(currentYear);
+      }
     }
   }, [user, open]);
 
@@ -31,6 +43,8 @@ export function EditUserModal({ open, onClose, user, onSave }) {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
 
+    const finalYear = turmaOption === 'custom' ? (customYear.trim() || '2027') : turmaOption;
+
     onSave({
       ...user,
       name: name.trim(),
@@ -39,7 +53,7 @@ export function EditUserModal({ open, onClose, user, onSave }) {
       title: isProfessor ? title : null,
       enrollment: isStudent ? enrollment.trim() : null,
       course: 'Bacharel em Teologia',
-      year: isStudent ? year : null,
+      year: isStudent ? finalYear : null,
     });
 
     onClose();
@@ -108,32 +122,47 @@ export function EditUserModal({ open, onClose, user, onSave }) {
         </div>
 
         {isStudent && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            <Field label="Matrícula">
-              <Input
-                required
-                value={enrollment}
-                onChange={(e) => setEnrollment(e.target.value)}
-              />
-            </Field>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <Field label="Matrícula">
+                <Input
+                  required
+                  value={enrollment}
+                  onChange={(e) => setEnrollment(e.target.value)}
+                />
+              </Field>
 
-            <Field label="Curso" className="sm:col-span-1">
+              <Field label="Ano Letivo / Turma" hint="Define envio de documentos" className="sm:col-span-2">
+                <Select
+                  value={turmaOption}
+                  onChange={(e) => setTurmaOption(e.target.value)}
+                >
+                  <option value="2027">Turma 2027 (Ingressante)</option>
+                  <option value="2026">Turma 2026</option>
+                  <option value="custom">Outra turma / ano específico...</option>
+                </Select>
+              </Field>
+            </div>
+
+            {turmaOption === 'custom' && (
+              <Field label="Digite o Ano Letivo / Turma Customizada" hint="Ex: 2028, etc.">
+                <Input
+                  required
+                  placeholder="Ex: 2028"
+                  value={customYear}
+                  onChange={(e) => setCustomYear(e.target.value)}
+                />
+              </Field>
+            )}
+
+            <Field label="Curso">
               <Input
                 disabled
-                value="Bacharel em Teologia"
-                className="bg-stone-50 dark:bg-stone-800/50 cursor-not-allowed text-stone-500"
+                value="Bacharel em Teologia (Curso Único)"
+                className="bg-stone-50 dark:bg-stone-800/50 cursor-not-allowed text-stone-500 font-medium"
               />
             </Field>
-
-            <Field label="Ano / Período">
-              <Select value={year} onChange={(e) => setYear(e.target.value)}>
-                <option value="1º ano">1º ano</option>
-                <option value="2º ano">2º ano</option>
-                <option value="3º ano">3º ano</option>
-                <option value="4º ano">4º ano</option>
-              </Select>
-            </Field>
-          </div>
+          </>
         )}
 
         <div className="flex justify-end gap-2 pt-4 border-t border-stone-200 dark:border-stone-800">

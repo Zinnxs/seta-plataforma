@@ -4,7 +4,7 @@
  * - Se não estiver configurado: opera em cache localStorage local.
  */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { createSeed } from '../data/seed';
+import { createSeed, DEFAULT_ENROLLMENT_DOCUMENTS } from '../data/seed';
 import { supabase, isSupabaseConfigured, saveSupabaseCredentials, credentialsSource } from './supabase';
 
 const DATA_KEY = 'seta-prod-v5';
@@ -167,6 +167,47 @@ export function StoreProvider({ children }) {
           important: an.important,
         }));
 
+        // Carrega configuração de documentos de matrícula e envios dos alunos (com fallback seguro)
+        let loadedDocsConfig = null;
+        let loadedStudentDocs = {};
+
+        try {
+          const { data: cfgRow } = await supabase.from('seta_enrollment_docs_config').select('*').limit(1).maybeSingle();
+          if (cfgRow) {
+            loadedDocsConfig = {
+              id: cfgRow.id || 'global-config',
+              requiredYears: Array.isArray(cfgRow.required_years) ? cfgRow.required_years : ['2027'],
+              documents: Array.isArray(cfgRow.documents) ? cfgRow.documents : DEFAULT_ENROLLMENT_DOCUMENTS,
+            };
+          }
+        } catch (e) {
+          console.warn('Tabela seta_enrollment_docs_config ainda não existe no Supabase.');
+        }
+
+        try {
+          const { data: stdDocs } = await supabase.from('seta_student_documents').select('*');
+          if (stdDocs && stdDocs.length > 0) {
+            stdDocs.forEach((row) => {
+              if (!loadedStudentDocs[row.student_id]) loadedStudentDocs[row.student_id] = {};
+              loadedStudentDocs[row.student_id][row.doc_type_id] = {
+                id: row.id,
+                studentId: row.student_id,
+                docTypeId: row.doc_type_id,
+                fileUrl: row.file_url,
+                fileName: row.file_name,
+                fileSize: row.file_size,
+                status: row.status,
+                notes: row.notes,
+                reviewedAt: row.reviewed_at,
+                reviewedBy: row.reviewed_by,
+                createdAt: row.created_at,
+              };
+            });
+          }
+        } catch (e) {
+          console.warn('Tabela seta_student_documents ainda não existe no Supabase.');
+        }
+
         if (isMounted) {
           setData((prev) => ({
             ...prev,
@@ -178,6 +219,12 @@ export function StoreProvider({ children }) {
             assignments,
             lessons,
             announcements: anErr ? prev.announcements : announcements,
+            enrollmentDocsConfig: loadedDocsConfig || prev.enrollmentDocsConfig || {
+              id: 'global-config',
+              requiredYears: ['2027'],
+              documents: DEFAULT_ENROLLMENT_DOCUMENTS,
+            },
+            studentDocuments: Object.keys(loadedStudentDocs).length > 0 ? loadedStudentDocs : (prev.studentDocuments || {}),
           }));
           setSyncStatus('synced');
           setLastSyncError(null);
@@ -499,6 +546,53 @@ export function StoreProvider({ children }) {
     } catch (e) {
       console.warn('Erro ao excluir comunicado no Supabase:', e);
       setSyncStatus('error');
+    }
+  };
+
+  const syncEnrollmentConfigToSupabase = async (config) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_enrollment_docs_config').upsert(
+        {
+          id: 'global-config',
+          required_years: config.requiredYears || ['2027'],
+          documents: config.documents || [],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+      if (error) console.error('Erro ao sincronizar config de documentos com Supabase:', error);
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Falha de rede ao sincronizar config de documentos:', e);
+    }
+  };
+
+  const syncStudentDocToSupabase = async (docRecord) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_student_documents').upsert(
+        {
+          id: docRecord.id,
+          student_id: docRecord.studentId,
+          doc_type_id: docRecord.docTypeId,
+          file_url: docRecord.fileUrl,
+          file_name: docRecord.fileName,
+          file_size: docRecord.fileSize,
+          status: docRecord.status,
+          notes: docRecord.notes || null,
+          reviewed_at: docRecord.reviewedAt || null,
+          reviewed_by: docRecord.reviewedBy || null,
+          created_at: docRecord.createdAt || new Date().toISOString(),
+        },
+        { onConflict: 'student_id,doc_type_id' }
+      );
+      if (error) console.error('Erro ao sincronizar documento do aluno com Supabase:', error);
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Falha de rede ao sincronizar documento do aluno:', e);
     }
   };
 
@@ -917,6 +1011,142 @@ export function StoreProvider({ children }) {
         d.announcements = d.announcements.filter((x) => x.id !== annId);
       });
       deleteAnnouncementFromSupabase(annId);
+    },
+
+    /** Atualizar configuração global de documentos de matrícula */
+    updateEnrollmentDocsConfig(newConfig) {
+      let cfgToSync = null;
+      update((d) => {
+        d.enrollmentDocsConfig = { ...(d.enrollmentDocsConfig || {}), ...newConfig };
+        cfgToSync = { ...d.enrollmentDocsConfig };
+      });
+      if (cfgToSync) syncEnrollmentConfigToSupabase(cfgToSync);
+    },
+
+    /** Adicionar novo tipo de documento exigido */
+    addEnrollmentDocType(docType) {
+      let cfgToSync = null;
+      update((d) => {
+        if (!d.enrollmentDocsConfig) {
+          d.enrollmentDocsConfig = { id: 'global-config', requiredYears: ['2027'], documents: [...DEFAULT_ENROLLMENT_DOCUMENTS] };
+        }
+        if (!d.enrollmentDocsConfig.documents) d.enrollmentDocsConfig.documents = [];
+        d.enrollmentDocsConfig.documents.push(docType);
+        cfgToSync = { ...d.enrollmentDocsConfig };
+      });
+      if (cfgToSync) syncEnrollmentConfigToSupabase(cfgToSync);
+    },
+
+    /** Editar tipo de documento exigido existente */
+    updateEnrollmentDocType(updatedDoc) {
+      let cfgToSync = null;
+      update((d) => {
+        if (!d.enrollmentDocsConfig?.documents) return;
+        const idx = d.enrollmentDocsConfig.documents.findIndex((x) => x.id === updatedDoc.id);
+        if (idx !== -1) {
+          d.enrollmentDocsConfig.documents[idx] = { ...d.enrollmentDocsConfig.documents[idx], ...updatedDoc };
+          cfgToSync = { ...d.enrollmentDocsConfig };
+        }
+      });
+      if (cfgToSync) syncEnrollmentConfigToSupabase(cfgToSync);
+    },
+
+    /** Remover tipo de documento exigido */
+    deleteEnrollmentDocType(docTypeId) {
+      let cfgToSync = null;
+      update((d) => {
+        if (!d.enrollmentDocsConfig?.documents) return;
+        d.enrollmentDocsConfig.documents = d.enrollmentDocsConfig.documents.filter((x) => x.id !== docTypeId);
+        cfgToSync = { ...d.enrollmentDocsConfig };
+      });
+      if (cfgToSync) syncEnrollmentConfigToSupabase(cfgToSync);
+    },
+
+    /** Upload de documento pelo aluno */
+    async uploadStudentEnrollmentDocument(studentId, docTypeId, file) {
+      if (!file) return { success: false, error: 'Nenhum arquivo fornecido' };
+      const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+      if (file.size > MAX_SIZE) {
+        return { success: false, error: 'O arquivo excede o limite máximo permitido de 15MB.' };
+      }
+
+      let fileUrl = '';
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `documentos/${studentId}/${docTypeId}_${Date.now()}_${cleanFileName}`;
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('seta-trabalhos')
+            .upload(filePath, file, {
+              upsert: true,
+              contentType: file.type || 'application/octet-stream',
+            });
+
+          if (!uploadErr) {
+            const { data: urlData } = supabase.storage.from('seta-trabalhos').getPublicUrl(filePath);
+            fileUrl = urlData.publicUrl;
+          } else {
+            console.warn('Supabase storage aviso para documento, usando fallback local:', uploadErr);
+            fileUrl = URL.createObjectURL(file);
+          }
+        } catch (e) {
+          fileUrl = URL.createObjectURL(file);
+        }
+      } else {
+        fileUrl = URL.createObjectURL(file);
+      }
+
+      const record = {
+        id: `sdoc-${studentId}-${docTypeId}`,
+        studentId,
+        docTypeId,
+        fileUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        status: 'em_analise',
+        notes: null,
+        reviewedAt: null,
+        reviewedBy: null,
+        createdAt: new Date().toISOString(),
+      };
+
+      update((d) => {
+        if (!d.studentDocuments) d.studentDocuments = {};
+        if (!d.studentDocuments[studentId]) d.studentDocuments[studentId] = {};
+        d.studentDocuments[studentId][docTypeId] = record;
+      });
+
+      syncStudentDocToSupabase(record);
+      return { success: true, record };
+    },
+
+    /** Avaliação/Revisão do documento pela Direção (Aprovar / Solicitar Reenvio) */
+    reviewStudentEnrollmentDocument(studentId, docTypeId, status, notes) {
+      let recordToSync = null;
+      update((d) => {
+        if (!d.studentDocuments) d.studentDocuments = {};
+        if (!d.studentDocuments[studentId]) d.studentDocuments[studentId] = {};
+        const curr = d.studentDocuments[studentId][docTypeId] || {
+          id: `sdoc-${studentId}-${docTypeId}`,
+          studentId,
+          docTypeId,
+          fileUrl: '',
+          fileName: '',
+          fileSize: 0,
+          createdAt: new Date().toISOString(),
+        };
+        const updated = {
+          ...curr,
+          status,
+          notes: notes || null,
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: session?.name || 'Direção Geral',
+        };
+        d.studentDocuments[studentId][docTypeId] = updated;
+        recordToSync = updated;
+      });
+      if (recordToSync) syncStudentDocToSupabase(recordToSync);
     },
 
     saveSupabaseCredentials,
