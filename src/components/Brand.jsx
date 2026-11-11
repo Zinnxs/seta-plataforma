@@ -10,7 +10,7 @@ export function Brand({ className, showSubtitle = true, size = 'md' }) {
     <div className={cn('flex items-center gap-3', className)}>
       <div 
         className={cn(
-          'relative shrink-0 flex items-center justify-center rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-[#FAF9F5] dark:bg-[#1B1C22] text-[#B48636] dark:text-[#E0A94E]',
+          'relative shrink-0 flex items-center justify-center rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-[#FAF9F5] dark:bg-[#1B1C22] text-[#9E6C1B] dark:text-[#E0A94E]',
           isLarge ? 'h-11 w-11 p-2' : 'h-8.5 w-8.5 p-1.5'
         )}
       >
@@ -19,7 +19,7 @@ export function Brand({ className, showSubtitle = true, size = 'md' }) {
       <div className="leading-tight">
         <div className="flex items-center gap-1.5">
           <span className="font-serif text-[15px] font-semibold tracking-wider text-[#1D1B18] dark:text-[#EDEDE8]">
-            PORTAL <span className="text-[#B48636] dark:text-[#E0A94E] font-medium">SETA</span>
+            PORTAL <span className="text-[#9E6C1B] dark:text-[#E0A94E] font-medium">SETA</span>
           </span>
         </div>
         {showSubtitle && (

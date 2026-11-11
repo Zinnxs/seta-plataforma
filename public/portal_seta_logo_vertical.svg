@@ -15,7 +15,7 @@
       text-anchor: middle;
     }
     .title-highlight {
-      fill: #B48636;
+      fill: #9E6C1B;
     }
     .subtitle {
       font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;

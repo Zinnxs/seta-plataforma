@@ -14,17 +14,17 @@ function NavItem({ item, active, onClick, compact }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'flex cursor-pointer items-center gap-2.5 rounded-lg text-xs sm:text-sm transition-colors text-left',
-        compact ? 'h-9 shrink-0 px-3' : 'h-9 w-full px-3',
+        'flex cursor-pointer items-center gap-2.5 rounded-lg text-[13px] transition-colors text-left font-medium',
+        compact ? 'h-9 shrink-0 px-3' : 'h-9.5 w-full px-3',
         active
-          ? 'bg-stone-200/50 font-medium text-[#1D1B18] border-l-2 border-[#B48636] dark:bg-white/[0.08] dark:text-[#EDEDE8] dark:border-[#E0A94E]'
+          ? 'bg-stone-200/50 text-[#1D1B18] border-l-2 border-[#B48636] dark:bg-white/[0.08] dark:text-[#EDEDE8] dark:border-[#E0A94E]'
           : 'text-[#6E6A63] hover:bg-black/[0.03] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:bg-white/[0.04] dark:hover:text-[#EDEDE8]'
       )}
     >
       <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-      <span className="truncate">{item.label}</span>
+      <span className={compact ? "truncate" : "whitespace-nowrap"}>{item.label}</span>
       {item.count > 0 && (
-        <span className="ml-auto rounded px-1.5 py-0.2 text-[10px] font-medium tabular-nums bg-stone-200/70 text-[#1D1B18] dark:bg-white/[0.1] dark:text-[#EDEDE8]">
+        <span className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums bg-stone-200/70 text-[#1D1B18] dark:bg-white/[0.1] dark:text-[#EDEDE8]">
           {item.count}
         </span>
       )}
@@ -39,8 +39,8 @@ export function Layout({ nav, page, onNavigate, roleLabel, children }) {
 
   return (
     <div className="min-h-screen bg-[#FAF9F5] text-[#1D1B18] dark:bg-[#131417] dark:text-[#EDEDE8] transition-colors overflow-x-hidden">
-      {/* Barra lateral (desktop) */}
-      <aside className="no-print fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-black/[0.06] bg-[#FAF9F5] px-4 py-6 md:flex dark:border-white/[0.08] dark:bg-[#16171C]">
+      {/* Barra lateral (desktop com largura otimizada para micro-tipografia) */}
+      <aside className="no-print fixed inset-y-0 left-0 hidden w-[272px] flex-col border-r border-black/[0.06] bg-[#FAF9F5] px-4 py-6 md:flex dark:border-white/[0.08] dark:bg-[#16171C]">
         <Brand className="px-2" />
 
         <nav className="mt-8 flex-1 space-y-1 overflow-y-auto pr-1">
@@ -107,7 +107,7 @@ export function Layout({ nav, page, onNavigate, roleLabel, children }) {
       </header>
 
       {/* Área Central de Trabalho (Sem rodapé poluído) */}
-      <main className="md:pl-64 min-h-screen">
+      <main className="md:pl-[272px] min-h-screen">
         <div className="mx-auto max-w-6xl w-full px-4 py-6 sm:px-8 lg:py-8">
           {children}
         </div>

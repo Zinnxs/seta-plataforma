@@ -65,15 +65,15 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
           <p className="text-xs text-[#6E6A63] dark:text-[#9E9C96]">Gerencie notas, frequências e critérios de avaliação</p>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-stone-100/90 dark:bg-white/[0.05] rounded-lg text-xs overflow-x-auto border border-black/[0.04] dark:border-white/[0.06]">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 p-1 bg-stone-100/90 dark:bg-white/[0.05] rounded-lg text-xs overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border border-black/[0.04] dark:border-white/[0.06]">
           <button
             type="button"
             onClick={() => setStatusFilter('em_andamento')}
             className={cn(
-              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
               statusFilter === 'em_andamento'
-                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
             )}
           >
             Em Andamento ({activeDisciplines.length})
@@ -82,10 +82,10 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
             type="button"
             onClick={() => setStatusFilter('concluida')}
             className={cn(
-              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
               statusFilter === 'concluida'
-                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
             )}
           >
             Concluídas ({concludedDisciplines.length})
@@ -94,10 +94,10 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
             type="button"
             onClick={() => setStatusFilter('futura')}
             className={cn(
-              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
               statusFilter === 'futura'
-                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
             )}
           >
             Futuras ({futureDisciplines.length})
@@ -106,10 +106,10 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
             type="button"
             onClick={() => setStatusFilter('todas')}
             className={cn(
-              'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+              'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
               statusFilter === 'todas'
-                ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
             )}
           >
             Todas ({disciplines.length})
@@ -135,10 +135,10 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
               <Card key={d.id} className="flex flex-col p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs text-stone-500 dark:text-stone-400">
-                      {d.code} · {d.schedule}
+                    <p className="text-xs text-[#6E6A63] dark:text-[#9E9C96]">
+                      <span className="font-mono whitespace-nowrap font-medium text-[#B48636] dark:text-[#E0A94E]">{d.code}</span> · {d.schedule}
                     </p>
-                    <h3 className="mt-0.5 font-medium text-stone-900 dark:text-stone-50">{d.name}</h3>
+                    <h3 className="mt-0.5 font-medium text-[#1D1B18] dark:text-[#EDEDE8]">{d.name}</h3>
                   </div>
                   {isCompleted ? (
                     <Badge tone="green">Concluída / Arquivada</Badge>

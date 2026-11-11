@@ -252,7 +252,8 @@ function StudentReportCard({ student, rows, period }) {
               >
                 <span>{isSelected ? '✓' : '○'}</span>
                 <span>{stBadge}</span>
-                <span>{discipline.code} - {discipline.name}</span>
+                <span className="font-mono whitespace-nowrap font-medium text-[#B48636] dark:text-[#E0A94E]">{discipline.code}</span>
+                <span>· {discipline.name}</span>
               </button>
             );
           })}
@@ -297,11 +298,11 @@ function StudentReportCard({ student, rows, period }) {
               const maxPossible = pointsTotal(discipline.evaluations);
               return (
                 <Card key={discipline.id} className="p-5">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-stone-100 dark:border-stone-800 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-black/[0.04] dark:border-white/[0.06] pb-4">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{discipline.code}</span>
-                        <h4 className="text-base font-semibold text-stone-900 dark:text-stone-50">{discipline.name}</h4>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold text-[#B48636] dark:text-[#E0A94E] font-mono whitespace-nowrap">{discipline.code}</span>
+                        <h4 className="text-base font-semibold text-[#1D1B18] dark:text-[#EDEDE8]">{discipline.name}</h4>
                       </div>
                       <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
                         Docente: {personName(professor)} · {discipline.schedule} · Carga: {discipline.workload}h
@@ -407,8 +408,8 @@ function StudentAssignments({ assignments, onOpenSubmit }) {
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{a.discipline?.code}</span>
-                      <span className="text-xs text-stone-400">· {a.discipline?.name}</span>
+                      <span className="text-xs font-semibold text-[#B48636] dark:text-[#E0A94E] font-mono whitespace-nowrap">{a.discipline?.code}</span>
+                      <span className="text-xs text-[#6E6A63] dark:text-[#9E9C96]">· {a.discipline?.name}</span>
 
                       {subType === 'upload' && (
                         <Badge tone="blue" className="gap-1">

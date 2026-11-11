@@ -396,16 +396,16 @@ function AdminOverview({
             <span className="text-xs text-stone-400">Separe matérias ativas, concluídas ou futuras para manter a tela limpa</span>
           </div>
 
-          {/* Abas do Arquivo de Matérias */}
-          <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-stone-800/80 rounded-xl text-xs overflow-x-auto">
+          {/* Abas do Arquivo de Matérias com Scroll Invisível */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 p-1 bg-stone-100/90 dark:bg-white/[0.05] rounded-lg text-xs overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border border-black/[0.04] dark:border-white/[0.06]">
             <button
               type="button"
               onClick={() => setStatusFilter('em_andamento')}
               className={cn(
-                'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+                'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
                 statusFilter === 'em_andamento'
-                  ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                  ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                  : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
               )}
             >
               Em Andamento ({emAndamentoCount})
@@ -414,10 +414,10 @@ function AdminOverview({
               type="button"
               onClick={() => setStatusFilter('concluida')}
               className={cn(
-                'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+                'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
                 statusFilter === 'concluida'
-                  ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                  ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                  : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
               )}
             >
               Concluídas ({concluidasCount})
@@ -426,10 +426,10 @@ function AdminOverview({
               type="button"
               onClick={() => setStatusFilter('futura')}
               className={cn(
-                'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+                'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
                 statusFilter === 'futura'
-                  ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                  ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                  : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
               )}
             >
               Futuras ({futurasCount})
@@ -438,10 +438,10 @@ function AdminOverview({
               type="button"
               onClick={() => setStatusFilter('todas')}
               className={cn(
-                'px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap',
+                'px-3 py-1.5 rounded-md font-medium transition cursor-pointer whitespace-nowrap text-xs',
                 statusFilter === 'todas'
-                  ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                  ? 'bg-white text-[#1D1B18] shadow-xs dark:bg-[#22242B] dark:text-[#EDEDE8]'
+                  : 'text-[#6E6A63] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:text-[#EDEDE8]'
               )}
             >
               Todas ({todasCount})
@@ -466,7 +466,7 @@ function AdminOverview({
             />
           </Card>
         ) : (
-          <Card className="divide-y divide-stone-100 dark:divide-stone-800">
+          <Card className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
             {filteredStats.map(({ discipline, stats }) => {
               const prof = professors.find(p => p.id === discipline.professorId);
               const discStatus = discipline.status || (discipline.gradesClosed ? 'concluida' : 'em_andamento');
@@ -474,22 +474,22 @@ function AdminOverview({
                 <div 
                   key={discipline.id} 
                   onClick={() => onSelectDiscipline(discipline.id)}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-stone-50/60 dark:hover:bg-stone-800/30 cursor-pointer transition gap-3"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] cursor-pointer transition gap-3"
                 >
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{discipline.code}</span>
-                      <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{discipline.name}</h4>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-[#B48636] dark:text-[#E0A94E] font-mono whitespace-nowrap">{discipline.code}</span>
+                      <h4 className="text-sm font-semibold text-[#1D1B18] dark:text-[#EDEDE8]">{discipline.name}</h4>
                       {discStatus === 'concluida' ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-500/20">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-600/15 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-500/20">
                           Concluída / Arquivada
                         </span>
                       ) : discStatus === 'futura' ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-500/20">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-stone-100 text-[#1D1B18] border border-black/[0.05] dark:bg-white/[0.06] dark:text-[#EDEDE8] dark:border-white/[0.08]">
                           Futura / Planejada
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-500/20">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#FAF5EB] text-[#8C6422] border border-[#B48636]/20 dark:bg-[#1F1C18] dark:text-[#E0A94E] dark:border-[#E0A94E]/25">
                           Em Andamento
                         </span>
                       )}
