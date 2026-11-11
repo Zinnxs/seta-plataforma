@@ -1,6 +1,7 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { Button, cn } from './ui';
+import { SetaSymbol } from './SetaLogo';
 
 export function Brand({ className, showSubtitle = true, size = 'md' }) {
   const isLarge = size === 'lg';
@@ -9,24 +10,20 @@ export function Brand({ className, showSubtitle = true, size = 'md' }) {
     <div className={cn('flex items-center gap-3', className)}>
       <div 
         className={cn(
-          'relative shrink-0 overflow-hidden rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-[#FAF9F5] dark:bg-[#1B1C22]',
-          isLarge ? 'h-12 w-12' : 'h-9 w-9'
+          'relative shrink-0 flex items-center justify-center rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-[#FAF9F5] dark:bg-[#1B1C22] text-[#B48636] dark:text-[#E0A94E]',
+          isLarge ? 'h-11 w-11 p-2' : 'h-8.5 w-8.5 p-1.5'
         )}
       >
-        <img 
-          src="/portal_seta_symbol.png" 
-          alt="Selo Oficial SETA" 
-          className="h-full w-full object-contain select-none" 
-        />
+        <SetaSymbol className="w-full h-full" strokeWidth={1.6} />
       </div>
       <div className="leading-tight">
         <div className="flex items-center gap-1.5">
-          <span className="font-serif text-[15px] font-semibold tracking-tight text-[#1D1B18] dark:text-[#EDEDE8]">
-            Portal <span className="text-[#B48636] dark:text-[#E0A94E] font-medium">SETA</span>
+          <span className="font-serif text-[15px] font-semibold tracking-wider text-[#1D1B18] dark:text-[#EDEDE8]">
+            PORTAL <span className="text-[#B48636] dark:text-[#E0A94E] font-medium">SETA</span>
           </span>
         </div>
         {showSubtitle && (
-          <span className="block text-[11px] font-normal text-[#6E6A63] dark:text-[#9E9C96]">
+          <span className="block text-[10px] font-medium tracking-wide text-[#6E6A63] dark:text-[#9E9C96] uppercase">
             Seminário Teológico Aliança
           </span>
         )}

@@ -3,6 +3,7 @@ import { Eye, EyeOff, ArrowRight, ShieldCheck, Scale, FileText } from 'lucide-re
 import { useStore } from '../lib/store';
 import { Brand, ThemeToggle } from '../components/Brand';
 import { Button, Field, Input } from '../components/ui';
+import { SetaSymbol } from '../components/SetaLogo';
 import { InstitutionalFooter } from '../components/Legal/InstitutionalFooter';
 import { CookieConsentBanner } from '../components/Legal/CookieConsentBanner';
 import { LegalModal } from '../components/Legal/LegalModal';
@@ -43,18 +44,14 @@ export function Login() {
 
         {/* Brasão Oficial do SETA em Destaque Sereno */}
         <div className="relative z-10 my-auto flex flex-col items-center text-center">
-          <div className="relative mb-6 h-40 w-40 overflow-hidden rounded-full border border-white/[0.12] bg-[#1B1C22] shadow-xl">
-            <img
-              src="/portal_seta_crest.jpg"
-              alt="Brasão de Armas Oficial do Seminário Teológico Aliança - Conhecer, Servir, Glorificar"
-              className="h-full w-full rounded-full object-contain"
-            />
+          <div className="relative mb-6 h-36 w-36 flex items-center justify-center rounded-full border border-white/[0.12] bg-[#1B1C22] text-[#E0A94E] shadow-2xl p-6">
+            <SetaSymbol className="w-full h-full" strokeWidth={1.4} />
           </div>
 
-          <h2 className="font-serif text-3xl font-semibold tracking-tight text-[#EDEDE8]">
-            Portal <span className="text-[#E0A94E]">SETA</span>
+          <h2 className="font-serif text-3xl font-semibold tracking-wider text-[#EDEDE8]">
+            PORTAL <span className="text-[#E0A94E]">SETA</span>
           </h2>
-          <p className="mt-1 text-xs font-medium tracking-wider text-[#9E9C96] uppercase">
+          <p className="mt-1 text-xs font-semibold tracking-widest text-[#9E9C96] uppercase">
             Seminário Teológico Aliança
           </p>
           <p className="mt-2 text-[11px] font-mono tracking-[0.25em] text-[#E0A94E]/80">
@@ -88,12 +85,8 @@ export function Login() {
         <div className="flex flex-1 items-center justify-center px-6 pb-16">
           <div className="w-full max-w-sm">
             <div className="text-center lg:text-left mb-8">
-              <div className="mx-auto lg:mx-0 mb-4 h-12 w-12 overflow-hidden rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-[#1B1C22] lg:hidden">
-                <img 
-                  src="/portal_seta_symbol.png" 
-                  alt="Emblema Oficial do Seminário Teológico Aliança (SETA)" 
-                  className="h-full w-full object-contain" 
-                />
+              <div className="mx-auto lg:mx-0 mb-4 h-12 w-12 flex items-center justify-center rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-[#1B1C22] text-[#B48636] dark:text-[#E0A94E] p-2.5 lg:hidden">
+                <SetaSymbol className="w-full h-full" strokeWidth={1.6} />
               </div>
               <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-[#1D1B18] dark:text-[#EDEDE8]">
                 Acesso ao <span className="text-[#B48636] dark:text-[#E0A94E]">Portal SETA</span>

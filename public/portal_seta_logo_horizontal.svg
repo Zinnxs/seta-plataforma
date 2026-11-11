@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none">
+  <style>
+    .mark {
+      stroke: #B48636;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .title-portal {
+      font-family: 'Lora', Georgia, 'Times New Roman', serif;
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      fill: #1D1B18;
+    }
+    .title-seta {
+      font-family: 'Lora', Georgia, 'Times New Roman', serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      fill: #B48636;
+    }
+    .subtitle {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      font-size: 7.5px;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      fill: #6E6A63;
+      text-transform: uppercase;
+    }
+    @media (prefers-color-scheme: dark) {
+      .mark { stroke: #E0A94E; }
+      .title-portal { fill: #EDEDE8; }
+      .title-seta { fill: #E0A94E; }
+      .subtitle { fill: #9E9C96; }
+    }
+  </style>
+
+  <!-- SÍMBOLO MONOLINE (48x48 posicionado em x=8, y=8) -->
+  <g transform="translate(8, 8)">
+    <!-- Círculo da Aliança -->
+    <circle cx="24" cy="24" r="21.5" class="mark" opacity="0.4" />
+
+    <!-- Escrituras (Páginas Abertas) -->
+    <path d="M 24 25 C 19 23 14 24 9 22 L 9 30.5 C 14 32.5 19 31.5 24 33.5 Z" class="mark" />
+    <path d="M 11.5 27 C 15 28.5 19.5 28 24 29.5" class="mark" opacity="0.65" />
+    <path d="M 24 25 C 29 23 34 24 39 22 L 39 30.5 C 34 32.5 29 31.5 24 33.5 Z" class="mark" />
+    <path d="M 36.5 27 C 33 28.5 28.5 28 24 29.5" class="mark" opacity="0.65" />
+    <line x1="24" y1="25" x2="24" y2="34.5" class="mark" />
+
+    <!-- A Seta Ascendente -->
+    <line x1="24" y1="22" x2="24" y2="8" class="mark" />
+    <path d="M 19.5 13 L 24 7.5 L 28.5 13" class="mark" />
+
+    <!-- Arco da Aliança -->
+    <path d="M 15 17.5 C 19 14.5 29 14.5 33 17.5" class="mark" opacity="0.75" />
+  </g>
+
+  <!-- DIVISOR VERTICAL SUTIL -->
+  <line x1="68" y1="16" x2="68" y2="48" stroke="#1D1B18" stroke-opacity="0.12" stroke-width="1" />
+
+  <!-- TIPOGRAFIA DO LOGOTIPO -->
+  <g transform="translate(80, 0)">
+    <text x="0" y="33" class="title-portal">PORTAL <tspan class="title-seta">SETA</tspan></text>
+    <text x="1" y="47" class="subtitle">SEMINÁRIO TEOLÓGICO ALIANÇA</text>
+  </g>
+</svg>

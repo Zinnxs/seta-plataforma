@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none">
+  <style>
+    .mark {
+      stroke: #B48636;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .title-seta {
+      font-family: 'Lora', Georgia, 'Times New Roman', serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      fill: #1D1B18;
+      text-anchor: middle;
+    }
+    .title-highlight {
+      fill: #B48636;
+    }
+    .subtitle {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.32em;
+      fill: #6E6A63;
+      text-transform: uppercase;
+      text-anchor: middle;
+    }
+    .motto {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      fill: #B48636;
+      text-anchor: middle;
+    }
+    @media (prefers-color-scheme: dark) {
+      .mark { stroke: #E0A94E; }
+      .title-seta { fill: #EDEDE8; }
+      .title-highlight { fill: #E0A94E; }
+      .subtitle { fill: #9E9C96; }
+      .motto { fill: #E0A94E; }
+    }
+  </style>
+
+  <!-- SÍMBOLO MONOLINE CENTRALIZADO (Escala 1.5, Caixa 72x72 em x=84, y=16) -->
+  <g transform="translate(84, 16) scale(1.5)">
+    <!-- Círculo da Aliança -->
+    <circle cx="24" cy="24" r="21.5" class="mark" opacity="0.4" />
+
+    <!-- Escrituras (Páginas Abertas) -->
+    <path d="M 24 25 C 19 23 14 24 9 22 L 9 30.5 C 14 32.5 19 31.5 24 33.5 Z" class="mark" />
+    <path d="M 11.5 27 C 15 28.5 19.5 28 24 29.5" class="mark" opacity="0.65" />
+    <path d="M 24 25 C 29 23 34 24 39 22 L 39 30.5 C 34 32.5 29 31.5 24 33.5 Z" class="mark" />
+    <path d="M 36.5 27 C 33 28.5 28.5 28 24 29.5" class="mark" opacity="0.65" />
+    <line x1="24" y1="25" x2="24" y2="34.5" class="mark" />
+
+    <!-- A Seta Ascendente -->
+    <line x1="24" y1="22" x2="24" y2="8" class="mark" />
+    <path d="M 19.5 13 L 24 7.5 L 28.5 13" class="mark" />
+
+    <!-- Arco da Aliança -->
+    <path d="M 15 17.5 C 19 14.5 29 14.5 33 17.5" class="mark" opacity="0.75" />
+  </g>
+
+  <!-- TIPOGRAFIA DO LOGOTIPO CENTRALIZADA -->
+  <text x="120" y="132" class="title-seta">PORTAL <tspan class="title-highlight">SETA</tspan></text>
+  <text x="120" y="152" class="subtitle">SEMINÁRIO TEOLÓGICO ALIANÇA</text>
+
+  <!-- DIVISOR DELICADO -->
+  <line x1="80" y1="164" x2="160" y2="164" stroke="#B48636" stroke-opacity="0.3" stroke-width="1" />
+
+  <!-- LEMA ACADÊMICO -->
+  <text x="120" y="178" class="motto">CONHECER · SERVIR · GLORIFICAR</text>
+</svg>

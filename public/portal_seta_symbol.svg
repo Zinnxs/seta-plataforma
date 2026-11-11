@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Círculo da Aliança (Selo / Covenant Ring) -->
+  <circle cx="24" cy="24" r="21.5" opacity="0.4" />
+
+  <!-- As Páginas das Escrituras (Livro Aberto) -->
+  <!-- Folha Esquerda -->
+  <path d="M 24 25 C 19 23 14 24 9 22 L 9 30.5 C 14 32.5 19 31.5 24 33.5 Z" />
+  <!-- Linha interna de leitura da folha esquerda -->
+  <path d="M 11.5 27 C 15 28.5 19.5 28 24 29.5" opacity="0.65" />
+
+  <!-- Folha Direita -->
+  <path d="M 24 25 C 29 23 34 24 39 22 L 39 30.5 C 34 32.5 29 31.5 24 33.5 Z" />
+  <!-- Linha interna de leitura da folha direita -->
+  <path d="M 36.5 27 C 33 28.5 28.5 28 24 29.5" opacity="0.65" />
+
+  <!-- Lombada / Eixo Central -->
+  <line x1="24" y1="25" x2="24" y2="34.5" />
+
+  <!-- A Seta Ascendente / Facho de Direção Espiritual e Acadêmica -->
+  <!-- Haste Central -->
+  <line x1="24" y1="22" x2="24" y2="8" />
+  <!-- Ponta da Flecha (Vértice nobre de sabedoria) -->
+  <path d="M 19.5 13 L 24 7.5 L 28.5 13" />
+
+  <!-- Arco da Aliança Superior (Elipse sutil de união entre as páginas e a seta) -->
+  <path d="M 15 17.5 C 19 14.5 29 14.5 33 17.5" opacity="0.75" />
+</svg>
