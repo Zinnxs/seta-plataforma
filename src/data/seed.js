@@ -87,7 +87,13 @@ export function createSeed() {
       name: 'Seminário Teológico Aliança',
       portalName: 'Portal SETA',
       acronym: 'SETA',
+      course: 'Bacharel em Teologia',
       period: '2026.2',
+      cnpj: '07.396.459/0001-03',
+      address: 'Av. Antônio de Almeida, 2238 - Retiro, Volta Redonda - RJ, 27277-330',
+      phone: '(24) 99906-5611',
+      phoneSecondary: '(24) 99837-2729',
+      dpoEmail: 'privacidade@seta.edu.br',
     },
     admins: [
       {

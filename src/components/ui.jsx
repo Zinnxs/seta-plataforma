@@ -47,7 +47,7 @@ export function Button({ variant = 'primary', size = 'md', className, children, 
   return (
     <button
       className={cn(
-        'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl font-medium transition-all disabled:pointer-events-none disabled:opacity-45',
+        'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl font-medium transition-all disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900',
         size === 'sm' ? 'h-8 px-3 text-xs' : size === 'icon' ? 'h-9 w-9' : 'h-10 px-4 text-sm',
         BTN[variant],
         className
@@ -122,16 +122,18 @@ export function Field({ label, hint, children, className }) {
 /* ---------- Abas segmentadas ---------- */
 export function Tabs({ tabs, value, onChange, className }) {
   return (
-    <div className={cn('inline-flex rounded-xl bg-stone-100 p-1 dark:bg-stone-800/60', className)}>
+    <div role="tablist" className={cn('inline-flex rounded-xl bg-stone-100 p-1 dark:bg-stone-800/60', className)}>
       {tabs.map((t) => (
         <button
           key={t.id}
           type="button"
+          role="tab"
+          aria-selected={value === t.id}
           onClick={() => onChange(t.id)}
           className={cn(
-            'flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm transition-colors',
+            'flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
             value === t.id
-              ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-white'
+              ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-white font-medium'
               : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
           )}
         >
@@ -224,17 +226,22 @@ export function Modal({ open, onClose, title, description, children, footer, siz
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-stone-900/25 backdrop-blur-[2px] dark:bg-black/50" onClick={onClose} />
+    <div 
+      className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-[2px] dark:bg-black/60 transition-opacity" onClick={onClose} />
       <div
         className={cn(
-          'relative flex max-h-[90vh] w-full flex-col rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/5 dark:border-stone-800 dark:bg-stone-900',
+          'relative flex max-h-[90vh] w-full flex-col rounded-2xl border border-stone-200 bg-white shadow-2xl shadow-stone-900/10 dark:border-stone-800 dark:bg-stone-900 transition-all',
           size === 'lg' ? 'max-w-2xl' : size === 'sm' ? 'max-w-md' : 'max-w-lg'
         )}
       >
         <div className="flex items-start justify-between gap-4 px-6 pt-6">
           <div>
-            <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">{title}</h3>
+            <h3 id="modal-title" className="text-base font-semibold text-stone-900 dark:text-stone-50">{title}</h3>
             {description && <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{description}</p>}
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fechar" className="-mr-2 -mt-1">
@@ -242,7 +249,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
           </Button>
         </div>
         <div className="overflow-y-auto px-6 py-5">{children}</div>
-        {footer && <div className="flex justify-end gap-2 px-6 pb-6">{footer}</div>}
+        {footer && <div className="flex justify-end gap-2 px-6 pb-6 border-t border-stone-100 dark:border-stone-800/80 pt-4">{footer}</div>}
       </div>
     </div>
   );

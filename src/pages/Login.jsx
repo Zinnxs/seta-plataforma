@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ShieldCheck, Scale, FileText } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { Brand, ThemeToggle } from '../components/Brand';
 import { Button, Field, Input } from '../components/ui';
+import { InstitutionalFooter } from '../components/Legal/InstitutionalFooter';
+import { CookieConsentBanner } from '../components/Legal/CookieConsentBanner';
+import { LegalModal } from '../components/Legal/LegalModal';
 
 export function Login() {
   const { login } = useStore();
@@ -10,6 +13,13 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState('privacidade');
+
+  const openLegal = (tab) => {
+    setLegalTab(tab);
+    setLegalModalOpen(true);
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -40,7 +50,7 @@ export function Login() {
           <div className="relative mb-6 h-48 w-48 overflow-hidden rounded-full p-1 ring-4 ring-amber-400/40 shadow-2xl shadow-amber-950/60 bg-[#070d1e]">
             <img
               src="/portal_seta_crest.jpg"
-              alt="Brasão Oficial Portal SETA"
+              alt="Brasão de Armas Oficial do Seminário Teológico Aliança - Conhecer, Servir, Glorificar"
               className="h-full w-full rounded-full object-contain"
             />
           </div>
@@ -83,7 +93,11 @@ export function Login() {
           <div className="w-full max-w-sm">
             <div className="text-center lg:text-left mb-8">
               <div className="mx-auto lg:mx-0 mb-4 h-14 w-14 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md lg:hidden">
-                <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-contain" />
+                <img 
+                  src="/portal_seta_symbol.png" 
+                  alt="Emblema Oficial do Seminário Teológico Aliança (SETA)" 
+                  className="h-full w-full object-contain" 
+                />
               </div>
               <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Acesso ao <span className="text-gold-gradient">Portal SETA</span>
@@ -141,7 +155,27 @@ export function Login() {
                 <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
 
-              <div className="pt-4 text-center border-t border-slate-200/80 dark:border-slate-800/80 mt-6">
+              {/* Aviso Legal de Consentimento e LGPD */}
+              <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 leading-relaxed pt-2">
+                Ao entrar, você concorda com os nossos{' '}
+                <button
+                  type="button"
+                  onClick={() => openLegal('termos')}
+                  className="font-semibold text-amber-600 dark:text-amber-400 hover:underline underline-offset-2"
+                >
+                  Termos de Uso
+                </button>{' '}
+                e a nossa{' '}
+                <button
+                  type="button"
+                  onClick={() => openLegal('privacidade')}
+                  className="font-semibold text-amber-600 dark:text-amber-400 hover:underline underline-offset-2"
+                >
+                  Política de Privacidade (LGPD)
+                </button>.
+              </p>
+
+              <div className="pt-3 text-center border-t border-slate-200/80 dark:border-slate-800/80 mt-4">
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Dúvidas ou suporte de acesso? Procure a secretaria acadêmica do SETA.
                 </p>
@@ -149,7 +183,20 @@ export function Login() {
             </form>
           </div>
         </div>
+
+        {/* Rodapé Institucional Legal */}
+        <div className="px-6 pb-6">
+          <InstitutionalFooter compact />
+        </div>
       </main>
+
+      <CookieConsentBanner />
+
+      <LegalModal
+        open={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        initialTab={legalTab}
+      />
     </div>
   );
 }

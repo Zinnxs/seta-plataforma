@@ -3,6 +3,8 @@ import { useStore } from '../lib/store';
 import { personName } from '../lib/format';
 import { Avatar, Button, cn } from './ui';
 import { Brand, ThemeToggle } from './Brand';
+import { InstitutionalFooter } from './Legal/InstitutionalFooter';
+import { CookieConsentBanner } from './Legal/CookieConsentBanner';
 
 function NavItem({ item, active, onClick, compact }) {
   const Icon = item.icon;
@@ -80,9 +82,14 @@ export function Layout({ nav, page, onNavigate, roleLabel, children }) {
         </nav>
       </header>
 
-      <main className="md:pl-64">
-        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 lg:py-12">{children}</div>
+      <main className="md:pl-64 flex flex-col min-h-screen">
+        <div className="mx-auto max-w-6xl w-full px-4 py-8 sm:px-8 lg:py-12 flex-1 flex flex-col justify-between">
+          <div>{children}</div>
+          <InstitutionalFooter />
+        </div>
       </main>
+
+      <CookieConsentBanner />
     </div>
   );
 }
