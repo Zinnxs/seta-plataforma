@@ -42,7 +42,7 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <span className="text-[11px] font-mono tracking-wider uppercase text-[#6E6A63] dark:text-[#9E9C96]">
-              Corpo Docente · {currentUser.title || 'Prof.'}
+              Corpo Docente · {currentUser?.title || 'Prof.'}
             </span>
             <span className="text-stone-300 dark:text-stone-700">•</span>
             <span className="text-[11px] font-medium text-[#B48636] dark:text-[#E0A94E]">
@@ -50,10 +50,10 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
             </span>
           </div>
           <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#1D1B18] dark:text-[#EDEDE8]">
-            Olá, {currentUser.name}
+            Olá, {currentUser?.name || 'Docente'}
           </h1>
           <p className="mt-1 text-xs text-[#6E6A63] dark:text-[#9E9C96]">
-            Seminário Teológico Aliança · {disciplines.length} disciplinas sob sua regência
+            Seminário Teológico Aliança · {disciplines?.length || 0} disciplinas sob sua regência
           </p>
         </div>
       </div>

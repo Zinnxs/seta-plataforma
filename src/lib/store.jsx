@@ -247,8 +247,18 @@ export function StoreProvider({ children }) {
   const currentUser = useMemo(() => {
     if (!session) return null;
     const pool =
-      session.role === 'aluno' ? data.students : session.role === 'professor' ? data.professors : data.admins;
-    return pool.find((u) => u.id === session.userId) || null;
+      session.role === 'aluno'
+        ? (data.students || [])
+        : session.role === 'professor'
+        ? (data.professors || [])
+        : (data.admins || []);
+    let user = pool.find((u) => u.id === session.userId);
+    if (!user) {
+      // Procura em todos os perfis para evitar nulo por divergência de permissão
+      const allUsers = [...(data.admins || []), ...(data.professors || []), ...(data.students || [])];
+      user = allUsers.find((u) => u.id === session.userId) || null;
+    }
+    return user;
   }, [session, data]);
 
   /** Aplica alteração local com resposta imediata e sincroniza em segundo plano */

@@ -75,8 +75,19 @@ export function AdminApp({ onOpenSupabaseConfig }) {
     lastSyncError,
   } = useStore();
 
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] dark:bg-[#131417] p-6 text-center">
+        <div className="space-y-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#B48636] border-t-transparent mx-auto dark:border-[#E0A94E]" />
+          <p className="text-sm font-medium text-[#6E6A63] dark:text-[#9E9C96]">Carregando ambiente da Direção...</p>
+        </div>
+      </div>
+    );
+  }
+
   const [page, setPage] = useState('visao_geral');
-  const [selectedDiscId, setSelectedDiscId] = useState(data.disciplines[0]?.id);
+  const [selectedDiscId, setSelectedDiscId] = useState(data.disciplines?.[0]?.id);
   const [adminTab, setAdminTab] = useState('notas'); // 'notas' | 'criterios'
 
   // Modais de Criação e Edição
@@ -89,22 +100,22 @@ export function AdminApp({ onOpenSupabaseConfig }) {
   const [editDisciplineModalOpen, setEditDisciplineModalOpen] = useState(false);
   const [disciplineToEdit, setDisciplineToEdit] = useState(null);
 
-  const selectedDiscipline = data.disciplines.find(d => d.id === selectedDiscId) || data.disciplines[0];
+  const selectedDiscipline = (data.disciplines || []).find(d => d.id === selectedDiscId) || data.disciplines?.[0] || null;
 
   // Cálculo de estatísticas consolidadas de todas as disciplinas
-  const allStats = data.disciplines.map(d => ({
+  const allStats = (data.disciplines || []).map(d => ({
     discipline: d,
-    stats: disciplineStats(d, data.grades[d.id])
+    stats: disciplineStats(d, data.grades?.[d.id] || {})
   }));
 
   const totalRecoveryCount = allStats.reduce((acc, curr) => acc + curr.stats.recovery, 0);
-  const closedDiariesCount = data.disciplines.filter(d => d.gradesClosed).length;
+  const closedDiariesCount = (data.disciplines || []).filter(d => d.gradesClosed).length;
 
   // Contagem de alunos com documentos aguardando análise da Direção
   const studentDocuments = data.studentDocuments || {};
   let pendingDocsReviewCount = 0;
   (data.students || []).forEach((s) => {
-    const sDocs = studentDocuments[s.id] || {};
+    const sDocs = studentDocuments[s?.id] || {};
     if (Object.values(sDocs).some((doc) => doc.status === 'em_analise')) {
       pendingDocsReviewCount++;
     }

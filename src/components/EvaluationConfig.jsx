@@ -17,8 +17,10 @@ const newId = () => `ev-${Date.now().toString(36)}-${Math.random().toString(36).
  * Editor dos critérios de avaliação de uma disciplina no modelo por soma de pontos.
  */
 export function EvaluationConfig({ discipline, onSave }) {
+  if (!discipline) return null;
+
   const initial = {
-    evaluations: discipline.evaluations,
+    evaluations: discipline.evaluations || [],
     passingGrade: discipline.passingGrade ?? 7.0,
     maxAbsences: discipline.maxAbsences ?? 15,
     recoveryRule: discipline.recoveryRule ?? 'substitui_menor',

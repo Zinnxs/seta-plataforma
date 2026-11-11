@@ -4,12 +4,25 @@ import { useStore } from '../../lib/store';
 import { disciplineStats } from '../../lib/grades';
 import { fmtGrade } from '../../lib/format';
 import { GradesTable } from '../../components/GradesTable';
-import { Badge, Button, ConfirmDialog, DisciplineSelect, PageHeader, Stat } from '../../components/ui';
+import { Badge, Button, ConfirmDialog, DisciplineSelect, EmptyState, PageHeader, Stat } from '../../components/ui';
 
 export function ProfessorGrades({ discipline, disciplines, onChangeDiscipline }) {
   const { data, setGradesClosed } = useStore();
   const [confirm, setConfirm] = useState(false);
-  const st = disciplineStats(discipline, data.grades[discipline.id]);
+
+  if (!discipline) {
+    return (
+      <>
+        <PageHeader title="Notas e frequência" subtitle="Seminário Teológico Aliança" />
+        <EmptyState
+          title="Nenhuma disciplina encontrada"
+          text="Você ainda não possui matérias vinculadas ao seu perfil de docente para este período."
+        />
+      </>
+    );
+  }
+
+  const st = disciplineStats(discipline, data.grades?.[discipline.id] || {});
 
   return (
     <>

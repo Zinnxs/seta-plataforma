@@ -2,13 +2,26 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { LessonList } from '../../components/LessonList';
-import { Button, DisciplineSelect, Field, Input, Modal, PageHeader, Tabs, Textarea } from '../../components/ui';
+import { Button, DisciplineSelect, EmptyState, Field, Input, Modal, PageHeader, Tabs, Textarea } from '../../components/ui';
 
 export function ProfessorLessons({ discipline, disciplines, onChangeDiscipline }) {
   const { data, addLesson, updateLesson, deleteLesson } = useStore();
   const [creating, setCreating] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
-  const lessons = data.lessons.filter((l) => l.disciplineId === discipline.id);
+
+  if (!discipline) {
+    return (
+      <>
+        <PageHeader title="Aulas e materiais" subtitle="Seminário Teológico Aliança" />
+        <EmptyState
+          title="Nenhuma disciplina encontrada"
+          text="Você ainda não possui matérias vinculadas ao seu perfil de docente para este período."
+        />
+      </>
+    );
+  }
+
+  const lessons = (data.lessons || []).filter((l) => l.disciplineId === discipline.id);
 
   return (
     <>

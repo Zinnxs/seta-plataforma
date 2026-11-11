@@ -12,10 +12,22 @@ import { ProfessorLessons } from './ProfessorLessons';
 
 export function ProfessorApp() {
   const { data, currentUser } = useStore();
-  const myDisciplines = data.disciplines.filter((d) => d.professorId === currentUser.id);
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] dark:bg-[#131417] p-6 text-center">
+        <div className="space-y-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#B48636] border-t-transparent mx-auto dark:border-[#E0A94E]" />
+          <p className="text-sm font-medium text-[#6E6A63] dark:text-[#9E9C96]">Carregando ambiente docente...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const myDisciplines = (data.disciplines || []).filter((d) => d?.professorId === currentUser?.id);
   const [page, setPage] = useState('inicio');
   const [discId, setDiscId] = useState(myDisciplines[0]?.id);
-  const discipline = myDisciplines.find((d) => d.id === discId) || myDisciplines[0];
+  const discipline = myDisciplines.find((d) => d?.id === discId) || myDisciplines[0] || null;
 
   const pendingReviews = data.assignments
     .filter((a) => myDisciplines.some((d) => d.id === a.disciplineId))

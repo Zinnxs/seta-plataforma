@@ -1,9 +1,21 @@
 import { useStore } from '../../lib/store';
 import { EvaluationConfig } from '../../components/EvaluationConfig';
-import { DisciplineSelect, PageHeader } from '../../components/ui';
+import { DisciplineSelect, EmptyState, PageHeader } from '../../components/ui';
 
 export function ProfessorEvaluation({ discipline, disciplines, onChangeDiscipline }) {
   const { saveDisciplineConfig } = useStore();
+
+  if (!discipline) {
+    return (
+      <>
+        <PageHeader title="Critérios de avaliação" subtitle="Seminário Teológico Aliança" />
+        <EmptyState
+          title="Nenhuma disciplina encontrada"
+          text="Você ainda não possui matérias vinculadas ao seu perfil de docente para este período."
+        />
+      </>
+    );
+  }
 
   return (
     <>

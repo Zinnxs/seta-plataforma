@@ -23,8 +23,20 @@ export function ProfessorAssignments({ discipline, disciplines, onChangeDiscipli
   const [editing, setEditing] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { assignment, submission }
 
-  const enrolled = Object.keys(data.grades[discipline.id] || {});
-  const list = data.assignments.filter((a) => a.disciplineId === discipline.id);
+  if (!discipline) {
+    return (
+      <>
+        <PageHeader title="Trabalhos acadêmicos" subtitle="Seminário Teológico Aliança" />
+        <EmptyState
+          title="Nenhuma disciplina encontrada"
+          text="Você ainda não possui matérias vinculadas ao seu perfil de docente para este período."
+        />
+      </>
+    );
+  }
+
+  const enrolled = Object.keys(data.grades?.[discipline.id] || {});
+  const list = (data.assignments || []).filter((a) => a.disciplineId === discipline.id);
 
   return (
     <>

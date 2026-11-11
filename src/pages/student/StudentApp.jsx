@@ -50,22 +50,33 @@ export function StudentApp() {
   const [page, setPage] = useState('boletim');
   const [uploadingAssignment, setUploadingAssignment] = useState(null);
 
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] dark:bg-[#131417] p-6 text-center">
+        <div className="space-y-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#B48636] border-t-transparent mx-auto dark:border-[#E0A94E]" />
+          <p className="text-sm font-medium text-[#6E6A63] dark:text-[#9E9C96]">Carregando ambiente do aluno...</p>
+        </div>
+      </div>
+    );
+  }
+
   const student = currentUser;
 
   // Disciplinas e pontuações do aluno
-  const studentRows = data.disciplines.map(d => {
-    const prof = data.professors.find(p => p.id === d.professorId);
-    const rec = data.grades[d.id]?.[student.id] || { scores: {}, recovery: null, absences: 0 };
+  const studentRows = (data.disciplines || []).map(d => {
+    const prof = (data.professors || []).find(p => p.id === d.professorId);
+    const rec = (data.grades?.[d?.id] && data.grades[d.id][student?.id]) || { scores: {}, recovery: null, absences: 0 };
     const res = computeResult(d, rec);
     return { discipline: d, professor: prof, rec, res };
   });
 
   // Trabalhos do aluno
-  const assignments = data.assignments.map(a => {
-    const disc = data.disciplines.find(d => d.id === a.disciplineId);
-    const prof = data.professors.find(p => p.id === disc?.professorId);
-    const sub = a.submissions.find(s => s.studentId === student.id);
-    const evalItem = disc?.evaluations.find(e => e.id === a.evaluationId);
+  const assignments = (data.assignments || []).map(a => {
+    const disc = (data.disciplines || []).find(d => d.id === a.disciplineId);
+    const prof = (data.professors || []).find(p => p.id === disc?.professorId);
+    const sub = (a.submissions || []).find(s => s.studentId === student?.id);
+    const evalItem = disc?.evaluations?.find(e => e.id === a.evaluationId);
     return { ...a, discipline: disc, professor: prof, submission: sub || null, evalItem };
   });
 
@@ -73,10 +84,10 @@ export function StudentApp() {
 
   // Verificação de obrigatoriedade de envio de documentos de matrícula por ano letivo
   const docsConfig = data.enrollmentDocsConfig || { requiredYears: ['2027'], documents: [] };
-  const studentYear = String(student.year || '2027');
+  const studentYear = String(student?.year || '2027');
   const isRequiredYear = (docsConfig.requiredYears || []).some(yr => studentYear.includes(yr)) || (docsConfig.requiredYears || []).includes('todas');
 
-  const studentDocs = (data.studentDocuments && data.studentDocuments[student.id]) || {};
+  const studentDocs = (data.studentDocuments && student?.id && data.studentDocuments[student.id]) || {};
   const requiredDocs = (docsConfig.documents || []).filter(d => d.required);
   const pendingDocsCount = requiredDocs.filter(d => !studentDocs[d.id] || studentDocs[d.id].status === 'rejeitado').length;
 

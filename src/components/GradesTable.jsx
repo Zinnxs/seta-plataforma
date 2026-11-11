@@ -16,7 +16,9 @@ export function GradesTable({ discipline, readOnly = false, actions }) {
   const { data, setScore, setRecovery, setAbsences } = useStore();
   const [filter, setFilter] = useState('todos');
 
-  const records = data.grades[discipline.id] || {};
+  if (!discipline) return null;
+
+  const records = (data.grades && data.grades[discipline.id]) || {};
   const rows = Object.keys(records)
     .map((id) => {
       const st = data.students.find((s) => s.id === id);
