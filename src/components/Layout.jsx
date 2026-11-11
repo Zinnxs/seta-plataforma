@@ -1,9 +1,10 @@
-import { LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { personName } from '../lib/format';
 import { Avatar, Button, cn } from './ui';
 import { Brand, ThemeToggle } from './Brand';
-import { InstitutionalFooter } from './Legal/InstitutionalFooter';
+import { LegalModal } from './Legal/LegalModal';
 import { CookieConsentBanner } from './Legal/CookieConsentBanner';
 
 function NavItem({ item, active, onClick, compact }) {
@@ -13,17 +14,17 @@ function NavItem({ item, active, onClick, compact }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'flex cursor-pointer items-center gap-3 rounded-xl text-sm transition-all',
-        compact ? 'h-9 shrink-0 px-3' : 'h-10 w-full px-3',
+        'flex cursor-pointer items-center gap-2.5 rounded-lg text-xs sm:text-sm transition-colors text-left',
+        compact ? 'h-9 shrink-0 px-3' : 'h-9 w-full px-3',
         active
-          ? 'bg-amber-500/10 font-semibold text-amber-900 border-l-2 border-amber-500 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400'
-          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900/60 dark:hover:text-slate-200'
+          ? 'bg-stone-200/50 font-medium text-[#1D1B18] border-l-2 border-[#B48636] dark:bg-white/[0.08] dark:text-[#EDEDE8] dark:border-[#E0A94E]'
+          : 'text-[#6E6A63] hover:bg-black/[0.03] hover:text-[#1D1B18] dark:text-[#9E9C96] dark:hover:bg-white/[0.04] dark:hover:text-[#EDEDE8]'
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
-      <span className="whitespace-nowrap">{item.label}</span>
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+      <span className="truncate">{item.label}</span>
       {item.count > 0 && (
-        <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-500/30">
+        <span className="ml-auto rounded px-1.5 py-0.2 text-[10px] font-medium tabular-nums bg-stone-200/70 text-[#1D1B18] dark:bg-white/[0.1] dark:text-[#EDEDE8]">
           {item.count}
         </span>
       )}
@@ -33,45 +34,68 @@ function NavItem({ item, active, onClick, compact }) {
 
 export function Layout({ nav, page, onNavigate, roleLabel, children }) {
   const { currentUser, logout } = useStore();
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
   const name = personName(currentUser);
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] text-slate-800 dark:bg-[#070d1e] dark:text-slate-100 transition-colors">
+    <div className="min-h-screen bg-[#FAF9F5] text-[#1D1B18] dark:bg-[#131417] dark:text-[#EDEDE8] transition-colors overflow-x-hidden">
       {/* Barra lateral (desktop) */}
-      <aside className="no-print fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-amber-500/15 bg-white/85 px-4 py-6 md:flex dark:border-amber-500/10 dark:bg-[#060a17]/95 backdrop-blur-md">
+      <aside className="no-print fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-black/[0.06] bg-[#FAF9F5] px-4 py-6 md:flex dark:border-white/[0.08] dark:bg-[#16171C]">
         <Brand className="px-2" />
 
-        <nav className="mt-8 flex-1 space-y-1">
+        <nav className="mt-8 flex-1 space-y-1 overflow-y-auto pr-1">
           {nav.map((item) => (
             <NavItem key={item.id} item={item} active={page === item.id} onClick={() => onNavigate(item.id)} />
           ))}
         </nav>
 
-        <div className="space-y-3 border-t border-slate-200/80 pt-4 dark:border-slate-800/80">
+        {/* Rodapé da Sidebar: Usuário + Ajustes + Links Jurídicos Discretos */}
+        <div className="space-y-3 border-t border-black/[0.06] pt-4 dark:border-white/[0.08]">
           <div className="flex items-center gap-3 px-2">
             <Avatar name={currentUser?.name} />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{name}</p>
-              <p className="text-xs text-amber-700/80 dark:text-amber-300/80 font-medium">{roleLabel}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-[#1D1B18] dark:text-[#EDEDE8]">{name}</p>
+              <p className="text-[11px] text-[#6E6A63] dark:text-[#9E9C96]">{roleLabel}</p>
             </div>
           </div>
+
           <div className="flex items-center gap-1">
-            <ThemeToggle full className="flex-1 justify-start" />
-            <Button variant="ghost" size="icon" onClick={logout} title="Sair do Portal SETA" aria-label="Sair">
-              <LogOut className="h-4 w-4" />
+            <ThemeToggle full className="flex-1 justify-start h-8 px-2" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={logout} 
+              className="h-8 w-8 text-[#6E6A63] hover:text-[#A04E36] dark:text-[#9E9C96]"
+              title="Sair do Portal SETA" 
+              aria-label="Sair"
+            >
+              <LogOut className="h-4 w-4" strokeWidth={1.5} />
             </Button>
+          </div>
+
+          {/* Gatilho compacto para Documentos Legais e LGPD */}
+          <div className="px-2 pt-1 border-t border-black/[0.04] dark:border-white/[0.04] flex items-center justify-between text-[11px] text-[#98948C] dark:text-[#686762]">
+            <button
+              type="button"
+              onClick={() => setLegalModalOpen(true)}
+              className="hover:text-[#B48636] dark:hover:text-[#E0A94E] flex items-center gap-1 transition-colors"
+            >
+              <ShieldCheck className="h-3 w-3" strokeWidth={1.5} />
+              <span>Privacidade & LGPD</span>
+            </button>
+            <span>v1.5</span>
           </div>
         </div>
       </aside>
 
       {/* Cabeçalho (mobile) */}
-      <header className="no-print sticky top-0 z-30 border-b border-amber-500/15 bg-white/90 backdrop-blur-md md:hidden dark:border-amber-500/10 dark:bg-[#060a17]/95">
+      <header className="no-print sticky top-0 z-30 border-b border-black/[0.06] bg-[#FAF9F5]/90 backdrop-blur-md md:hidden dark:border-white/[0.08] dark:bg-[#16171C]/90">
         <div className="flex h-14 items-center justify-between px-4">
           <Brand />
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={logout} aria-label="Sair">
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -82,14 +106,20 @@ export function Layout({ nav, page, onNavigate, roleLabel, children }) {
         </nav>
       </header>
 
-      <main className="md:pl-64 flex flex-col min-h-screen">
-        <div className="mx-auto max-w-6xl w-full px-4 py-8 sm:px-8 lg:py-12 flex-1 flex flex-col justify-between">
-          <div>{children}</div>
-          <InstitutionalFooter />
+      {/* Área Central de Trabalho (Sem rodapé poluído) */}
+      <main className="md:pl-64 min-h-screen">
+        <div className="mx-auto max-w-6xl w-full px-4 py-6 sm:px-8 lg:py-8">
+          {children}
         </div>
       </main>
 
       <CookieConsentBanner />
+
+      <LegalModal
+        open={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        initialTab="privacidade"
+      />
     </div>
   );
 }

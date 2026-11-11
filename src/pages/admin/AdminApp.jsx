@@ -24,7 +24,9 @@ import {
   Pencil,
   Database,
   Bell,
-  FileCheck
+  FileCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
@@ -252,6 +254,13 @@ export function AdminApp({ onOpenSupabaseConfig }) {
   );
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Bom dia';
+  if (hour >= 12 && hour < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
 function AdminOverview({ 
   institution, 
   disciplines, 
@@ -286,43 +295,61 @@ function AdminOverview({
   );
   return (
     <>
-      <PageHeader
-        title="Painel Institucional da Direção"
-        subtitle={`${institution.name} · Curso de Bacharel em Teologia · Período ${institution.period}`}
-        actions={
+      {/* Saudação Tipográfica Acadêmica Elegante e Serena */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-[11px] font-mono tracking-wider uppercase text-[#6E6A63] dark:text-[#9E9C96]">
+              {institution.course || 'Bacharel em Teologia'} · Período {institution.period}
+            </span>
+            <span className="text-stone-300 dark:text-stone-700">•</span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#6E6A63] dark:text-[#9E9C96]">
+              <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+              {isSupabaseConfigured ? 'Base de dados em nuvem' : 'Armazenamento local'}
+            </span>
+          </div>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#1D1B18] dark:text-[#EDEDE8]">
+            {getGreeting()}, Direção Geral
+          </h1>
+          <p className="mt-1 text-xs text-[#6E6A63] dark:text-[#9E9C96]">
+            {institution.name} · Painel Central de Gestão Acadêmica
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
           <Button variant="secondary" size="sm" onClick={onOpenSupabaseConfig} title="Configuração do Banco Supabase">
-            <Database className="h-3.5 w-3.5" />
+            <Database className="h-3.5 w-3.5 text-[#B48636] dark:text-[#E0A94E]" strokeWidth={1.5} />
             <span>Banco de Dados</span>
-            <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
           </Button>
-        }
-      />
+        </div>
+      </div>
 
       {/* Alerta se o Supabase não estiver configurado neste navegador */}
       {!isSupabaseConfigured && (
-        <div className="mb-6 p-4 rounded-2xl border border-amber-300 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="mb-6 p-4 rounded-xl border border-amber-500/20 bg-[#FAF5EB] dark:border-[#E0A94E]/25 dark:bg-[#1F1C18] text-[#8C6422] dark:text-[#E0A94E] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
-            <strong className="font-semibold flex items-center gap-1.5 text-sm">
-              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" /> Supabase Não Conectado neste Navegador
+            <strong className="font-semibold flex items-center gap-1.5 text-xs">
+              <AlertTriangle className="h-4 w-4 shrink-0" strokeWidth={1.5} /> Supabase Não Conectado neste Navegador
             </strong>
-            <p className="text-amber-800 dark:text-amber-300">
+            <p className="text-[11px] text-[#8C6422]/90 dark:text-[#E0A94E]/90 leading-relaxed">
               Você está salvando no cache local deste computador. Para salvar na nuvem e abrir em qualquer outro navegador ou celular, conecte o Supabase abaixo ou ative as variáveis no Vercel.
             </p>
           </div>
-          <Button size="sm" onClick={onOpenSupabaseConfig} className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white border-none">
-            <Database className="h-3.5 w-3.5" /> Conectar Supabase
+          <Button size="sm" onClick={onOpenSupabaseConfig} className="shrink-0">
+            <Database className="h-3.5 w-3.5" strokeWidth={1.5} /> Conectar Supabase
           </Button>
         </div>
       )}
 
       {/* Alerta se ocorreu erro ao sincronizar */}
       {lastSyncError && (
-        <div className="mb-6 p-4 rounded-2xl border border-rose-300 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="mb-6 p-4 rounded-xl border border-rose-500/20 bg-rose-50/70 dark:border-rose-500/30 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
-            <strong className="font-semibold flex items-center gap-1.5 text-sm">
-              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" /> Aviso de Sincronização do Banco
+            <strong className="font-semibold flex items-center gap-1.5 text-xs">
+              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" strokeWidth={1.5} /> Aviso de Sincronização do Banco
             </strong>
-            <p className="text-rose-800 dark:text-rose-300">
+            <p className="text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed">
               {isInvalidPathError ? (
                 <>
                   A URL do Supabase continha caminhos extras ou formato inválido. A plataforma <strong>já normalizou o formato automaticamente</strong>. Clique no botão ao lado para recarregar a conexão.
@@ -336,7 +363,7 @@ function AdminOverview({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isInvalidPathError && (
-              <Button size="sm" onClick={() => window.location.reload()} className="bg-amber-600 hover:bg-amber-700 text-white border-none">
+              <Button size="sm" onClick={() => window.location.reload()} className="bg-rose-600 hover:bg-rose-700 text-white">
                 Recarregar Conexão
               </Button>
             )}
@@ -346,35 +373,6 @@ function AdminOverview({
           </div>
         </div>
       )}
-
-      {/* Banner Oficial Institucional Portal SETA */}
-      <div className="relative mb-8 overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-r from-[#060a17] via-[#0b132b] to-[#121e3f] p-6 text-white shadow-lg shadow-amber-950/20">
-        <div className="pointer-events-none absolute -right-10 -bottom-10 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md bg-[#070d1e]">
-            <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-contain" />
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-0.5 text-xs font-semibold text-amber-300">
-              Ambiente Acadêmico Institucional
-            </div>
-            <h2 className="mt-1.5 font-serif text-2xl font-bold tracking-wide text-white">
-              PORTAL <span className="text-gold-gradient font-black">SETA</span>
-            </h2>
-            <p className="text-xs text-amber-200/80 font-medium tracking-wide">
-              Seminário Teológico Aliança · Bacharel em Teologia · Período {institution.period}
-            </p>
-          </div>
-          <div className="hidden lg:block shrink-0 text-right border-l border-amber-500/20 pl-6">
-            <p className="text-[11px] font-semibold tracking-[0.25em] text-amber-300">
-              CONHECER · SERVIR · GLORIFICAR
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              Gestão Central da Direção
-            </p>
-          </div>
-        </div>
-      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Stat label="Total de Alunos" value={students.length} hint="Corpo discente cadastrado" />
@@ -534,6 +532,14 @@ function AdminOverview({
 
 function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDeleteUser }) {
   const [tab, setTab] = useState('professores'); // 'professores' | 'alunos'
+  const [revealedPasswords, setRevealedPasswords] = useState({});
+
+  const toggleReveal = (id) => {
+    setRevealedPasswords(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   return (
     <>
@@ -543,10 +549,10 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" onClick={() => onOpenNewUser('professor')}>
-              <UserPlus className="h-4 w-4" /> Novo Professor
+              <UserPlus className="h-4 w-4" strokeWidth={1.5} /> Novo Professor
             </Button>
             <Button size="sm" onClick={() => onOpenNewUser('aluno')}>
-              <UserPlus className="h-4 w-4" /> Novo Aluno
+              <UserPlus className="h-4 w-4" strokeWidth={1.5} /> Novo Aluno
             </Button>
           </div>
         }
@@ -565,31 +571,43 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
 
       {tab === 'professores' && (
         <Card className="overflow-hidden">
-          <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex justify-between items-center bg-stone-50/50 dark:bg-stone-900/40 text-xs">
-            <span className="text-stone-500 font-medium">Professores com permissão de lançar notas, tarefas e aulas</span>
+          <div className="p-4 border-b border-black/[0.04] dark:border-white/[0.06] flex justify-between items-center bg-stone-50/50 dark:bg-white/[0.02] text-xs">
+            <span className="text-[#6E6A63] dark:text-[#9E9C96] font-medium">Professores com permissão de lançar notas, tarefas e aulas</span>
             <Button size="sm" onClick={() => onOpenNewUser('professor')}>
-              <Plus className="h-3.5 w-3.5" /> Cadastrar Professor
+              <Plus className="h-3.5 w-3.5" strokeWidth={1.5} /> Cadastrar Professor
             </Button>
           </div>
 
           {professors.length === 0 ? (
             <EmptyState icon={Users} title="Nenhum professor cadastrado" text="Clique no botão acima para cadastrar o primeiro professor do seminário." />
           ) : (
-            <div className="divide-y divide-stone-100 dark:divide-stone-800">
+            <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
               {professors.map((p) => (
                 <div key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <Avatar name={p.name} />
                     <div>
-                      <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{personName(p)}</h4>
-                      <p className="text-xs text-stone-400 font-mono mt-0.5">{p.email}</p>
+                      <h4 className="text-sm font-semibold text-[#1D1B18] dark:text-[#EDEDE8]">{personName(p)}</h4>
+                      <p className="text-xs text-[#6E6A63] dark:text-[#9E9C96] font-mono mt-0.5">{p.email}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-xs">
-                    <div className="bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-lg text-stone-600 dark:text-stone-300 font-mono flex items-center gap-1.5">
-                      <Key className="h-3 w-3 text-stone-400" />
-                      <span>Senha: {p.password || 'seta123'}</span>
+                    <div className="bg-stone-100 dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] px-2.5 py-1 rounded-md text-[#6E6A63] dark:text-[#9E9C96] font-mono flex items-center gap-1.5">
+                      <Key className="h-3 w-3 opacity-60" strokeWidth={1.5} />
+                      <span>{revealedPasswords[p.id] ? (p.password || 'seta123') : '••••••••'}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleReveal(p.id)}
+                        className="ml-1 text-[#98948C] hover:text-[#1D1B18] dark:hover:text-[#EDEDE8] transition-colors p-0.5"
+                        title={revealedPasswords[p.id] ? "Ocultar senha" : "Ver senha"}
+                      >
+                        {revealedPasswords[p.id] ? (
+                          <EyeOff className="h-3 w-3" strokeWidth={1.5} />
+                        ) : (
+                          <Eye className="h-3 w-3" strokeWidth={1.5} />
+                        )}
+                      </button>
                     </div>
 
                     <Button
@@ -598,13 +616,13 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
                       onClick={() => onEditUser(p)}
                       title="Editar dados e senha do professor"
                     >
-                      <Pencil className="h-3.5 w-3.5" /> Editar
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> Editar
                     </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-rose-500 hover:text-rose-700"
+                      className="text-[#A04E36] hover:bg-[#A04E36]/10"
                       onClick={() => {
                         if (confirm(`Deseja remover o professor ${p.name}?`)) {
                           onDeleteUser(p.id, 'professor');
@@ -612,7 +630,7 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
                       }}
                       title="Excluir professor"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                     </Button>
                   </div>
                 </div>
@@ -624,36 +642,48 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
 
       {tab === 'alunos' && (
         <Card className="overflow-hidden">
-          <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex justify-between items-center bg-stone-50/50 dark:bg-stone-900/40 text-xs">
-            <span className="text-stone-500 font-medium">Alunos matriculados no Bacharel em Teologia</span>
+          <div className="p-4 border-b border-black/[0.04] dark:border-white/[0.06] flex justify-between items-center bg-stone-50/50 dark:bg-white/[0.02] text-xs">
+            <span className="text-[#6E6A63] dark:text-[#9E9C96] font-medium">Alunos matriculados no Bacharel em Teologia</span>
             <Button size="sm" onClick={() => onOpenNewUser('aluno')}>
-              <Plus className="h-3.5 w-3.5" /> Cadastrar Aluno
+              <Plus className="h-3.5 w-3.5" strokeWidth={1.5} /> Cadastrar Aluno
             </Button>
           </div>
 
           {students.length === 0 ? (
             <EmptyState icon={GraduationCap} title="Nenhum aluno cadastrado" text="Clique no botão acima para cadastrar o primeiro aluno." />
           ) : (
-            <div className="divide-y divide-stone-100 dark:divide-stone-800">
+            <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
               {students.map((s) => (
                 <div key={s.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <Avatar name={s.name} />
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-50">{s.name}</h4>
-                        <span className="text-xs text-brand-600 dark:text-brand-400 font-bold font-mono">({s.enrollment})</span>
+                        <h4 className="text-sm font-semibold text-[#1D1B18] dark:text-[#EDEDE8]">{s.name}</h4>
+                        <span className="text-xs text-[#B48636] dark:text-[#E0A94E] font-medium font-mono">({s.enrollment})</span>
                       </div>
-                      <p className="text-xs text-stone-400 mt-0.5">
-                        Bacharel em Teologia · <span className="font-mono">{s.email}</span> · <span className="font-semibold text-stone-600 dark:text-stone-300">{s.year ? (String(s.year).includes('Turma') ? s.year : `Turma ${s.year}`) : 'Turma 2027'}</span>
+                      <p className="text-xs text-[#6E6A63] dark:text-[#9E9C96] mt-0.5">
+                        Bacharel em Teologia · <span className="font-mono">{s.email}</span> · <span className="font-medium text-[#1D1B18] dark:text-[#EDEDE8]">{s.year ? (String(s.year).includes('Turma') ? s.year : `Turma ${s.year}`) : 'Turma 2027'}</span>
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-xs">
-                    <div className="bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-lg text-stone-600 dark:text-stone-300 font-mono flex items-center gap-1.5">
-                      <Key className="h-3 w-3 text-stone-400" />
-                      <span>Senha: {s.password || 'seta123'}</span>
+                    <div className="bg-stone-100 dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] px-2.5 py-1 rounded-md text-[#6E6A63] dark:text-[#9E9C96] font-mono flex items-center gap-1.5">
+                      <Key className="h-3 w-3 opacity-60" strokeWidth={1.5} />
+                      <span>{revealedPasswords[s.id] ? (s.password || 'seta123') : '••••••••'}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleReveal(s.id)}
+                        className="ml-1 text-[#98948C] hover:text-[#1D1B18] dark:hover:text-[#EDEDE8] transition-colors p-0.5"
+                        title={revealedPasswords[s.id] ? "Ocultar senha" : "Ver senha"}
+                      >
+                        {revealedPasswords[s.id] ? (
+                          <EyeOff className="h-3 w-3" strokeWidth={1.5} />
+                        ) : (
+                          <Eye className="h-3 w-3" strokeWidth={1.5} />
+                        )}
+                      </button>
                     </div>
 
                     <Button
@@ -662,13 +692,13 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
                       onClick={() => onEditUser(s)}
                       title="Editar dados e senha do aluno"
                     >
-                      <Pencil className="h-3.5 w-3.5" /> Editar
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} /> Editar
                     </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-rose-500 hover:text-rose-700"
+                      className="text-[#A04E36] hover:bg-[#A04E36]/10"
                       onClick={() => {
                         if (confirm(`Deseja remover o aluno ${s.name}?`)) {
                           onDeleteUser(s.id, 'aluno');
@@ -676,7 +706,7 @@ function AdminUsersView({ students, professors, onOpenNewUser, onEditUser, onDel
                       }}
                       title="Excluir aluno"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                     </Button>
                   </div>
                 </div>

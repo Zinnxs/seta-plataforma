@@ -37,41 +37,35 @@ export function ProfessorOverview({ disciplines, onNavigate }) {
 
   return (
     <>
-      <PageHeader
-        title={`Olá, ${currentUser.title} ${firstName(currentUser.name)}`}
-        subtitle={`Período letivo ${data.institution.period} · ${disciplines.length} disciplinas sob sua responsabilidade`}
-      />
-
-      {/* Banner Oficial do Professor */}
-      <div className="relative mb-8 overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-[#060a17] via-[#0b132b] to-[#121e3f] p-5 text-white shadow-md">
-        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4 text-center sm:text-left">
-            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 bg-[#070d1e] shadow-md">
-              <img src="/portal_seta_symbol.png" alt="Portal SETA" className="h-full w-full object-contain" />
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
-                Portal SETA · Corpo Docente
-              </div>
-              <h2 className="mt-1 font-serif text-lg font-bold text-white">{currentUser.name}</h2>
-              <p className="text-xs text-slate-300">Seminário Teológico Aliança · Período {data.institution.period}</p>
-            </div>
+      {/* Saudação Tipográfica Acadêmica do Docente */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-5 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className="text-[11px] font-mono tracking-wider uppercase text-[#6E6A63] dark:text-[#9E9C96]">
+              Corpo Docente · {currentUser.title || 'Prof.'}
+            </span>
+            <span className="text-stone-300 dark:text-stone-700">•</span>
+            <span className="text-[11px] font-medium text-[#B48636] dark:text-[#E0A94E]">
+              Período {data.institution.period}
+            </span>
           </div>
-          <div className="text-center sm:text-right border-t sm:border-t-0 sm:border-l border-amber-500/20 pt-3 sm:pt-0 sm:pl-5">
-            <p className="text-xs font-semibold text-amber-300">Bacharel em Teologia</p>
-            <p className="text-[11px] text-slate-400">Ambiente de Docência e Notas</p>
-          </div>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#1D1B18] dark:text-[#EDEDE8]">
+            Olá, {currentUser.name}
+          </h1>
+          <p className="mt-1 text-xs text-[#6E6A63] dark:text-[#9E9C96]">
+            Seminário Teológico Aliança · {disciplines.length} disciplinas sob sua regência
+          </p>
         </div>
       </div>
 
       {/* Barra de Filtro do Arquivo de Matérias */}
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Disciplinas sob sua Responsabilidade</h3>
-          <p className="text-xs text-stone-400">Gerencie notas, frequências e critérios de avaliação</p>
+          <h3 className="text-sm font-semibold text-[#1D1B18] dark:text-[#EDEDE8]">Disciplinas sob sua Responsabilidade</h3>
+          <p className="text-xs text-[#6E6A63] dark:text-[#9E9C96]">Gerencie notas, frequências e critérios de avaliação</p>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-stone-800/80 rounded-xl text-xs overflow-x-auto">
+        <div className="flex items-center gap-1 p-1 bg-stone-100/90 dark:bg-white/[0.05] rounded-lg text-xs overflow-x-auto border border-black/[0.04] dark:border-white/[0.06]">
           <button
             type="button"
             onClick={() => setStatusFilter('em_andamento')}

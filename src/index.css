@@ -4,62 +4,118 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-serif: "Cinzel", Georgia, "Times New Roman", serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Paleta oficial nobre do SETA (Ouro Metálico e Champanhe) */
-  --color-brand-50: #fbf8ee;
-  --color-brand-100: #f5eed3;
-  --color-brand-200: #ebd99f;
-  --color-brand-300: #dec068;
-  --color-brand-400: #d4af37;
-  --color-brand-500: #c59e31;
-  --color-brand-600: #a87f25;
-  --color-brand-700: #866120;
-  --color-brand-800: #6f4f20;
-  --color-brand-900: #5e421e;
-  --color-brand-950: #37240d;
+  /* Cores Acadêmicas Humanistas do SETA */
+  /* Paleta Light (Biblioteca Clássica & Luz Natural) */
+  --color-paper-bg: #FAF9F5;
+  --color-paper-card: #FFFFFF;
+  --color-ink-primary: #1D1B18;
+  --color-ink-muted: #6E6A63;
+  --color-ink-subtle: #98948C;
 
-  /* Tons de azul marinho nobre */
-  --color-navy-900: #0b132b;
-  --color-navy-950: #070d1e;
+  /* Paleta Dark (Estudo Noturno Mineral) */
+  --color-mineral-bg: #131417;
+  --color-mineral-card: #1B1C22;
+  --color-candle-primary: #EDEDE8;
+  --color-candle-muted: #9E9C96;
+  --color-candle-subtle: #686762;
+
+  /* Acentos Clássicos */
+  --color-brass-500: #B48636;
+  --color-brass-600: #9B7028;
+  --color-brass-400: #CFA356;
+  --color-terracotta-500: #A04E36;
+  --color-terracotta-600: #893E29;
+  --color-amber-soft: #E0A94E;
 }
 
-html { color-scheme: light; }
-html.dark { color-scheme: dark; }
+html { 
+  color-scheme: light;
+  overflow-x: hidden;
+}
+
+html.dark { 
+  color-scheme: dark; 
+}
 
 body {
   margin: 0;
-  background-color: #faf9f6;
-  color: #1e293b;
+  background-color: #FAF9F5;
+  color: #1D1B18;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
 }
 
 html.dark body {
-  background-color: #070d1e;
-  color: #f1f5f9;
+  background-color: #131417;
+  color: #EDEDE8;
 }
 
 ::selection {
-  background: #d4af37;
-  color: #070d1e;
+  background: #B48636;
+  color: #FFFFFF;
 }
 
-/* Gradientes metálicos e ornatos dourados luxuosos */
-.text-gold-gradient {
-  background: linear-gradient(135deg, #FFF6D1 0%, #D4AF37 45%, #9E7422 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+html.dark ::selection {
+  background: #E0A94E;
+  color: #131417;
 }
 
-.bg-gold-metallic {
-  background: linear-gradient(135deg, #D4AF37 0%, #E5C378 40%, #B88E28 100%);
+/* Tipografia Serifada Acadêmica Nobre */
+.font-serif {
+  font-family: var(--font-serif);
+  font-feature-settings: "kern", "liga", "clig", "calt";
 }
 
-.border-gold-glow {
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.18);
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Barra de rolagem nativa fina e translúcida */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 134, 54, 0.25) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.12);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.22);
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+/* Destaque sutil para títulos acadêmicos (sem brilhos ou reflexos 3D) */
+.text-academic-accent {
+  color: #B48636;
+}
+
+.dark .text-academic-accent {
+  color: #E0A94E;
 }
 
 @media print {

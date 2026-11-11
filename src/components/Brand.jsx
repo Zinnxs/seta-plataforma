@@ -9,8 +9,8 @@ export function Brand({ className, showSubtitle = true, size = 'md' }) {
     <div className={cn('flex items-center gap-3', className)}>
       <div 
         className={cn(
-          'relative shrink-0 overflow-hidden rounded-full ring-2 ring-amber-400/50 shadow-md shadow-amber-950/20 bg-[#070d1e]',
-          isLarge ? 'h-14 w-14' : 'h-10 w-10'
+          'relative shrink-0 overflow-hidden rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-[#FAF9F5] dark:bg-[#1B1C22]',
+          isLarge ? 'h-12 w-12' : 'h-9 w-9'
         )}
       >
         <img 
@@ -21,12 +21,12 @@ export function Brand({ className, showSubtitle = true, size = 'md' }) {
       </div>
       <div className="leading-tight">
         <div className="flex items-center gap-1.5">
-          <span className="font-serif text-[15px] font-bold tracking-wider text-slate-900 dark:text-slate-100">
-            PORTAL <span className="text-gold-gradient font-black">SETA</span>
+          <span className="font-serif text-[15px] font-semibold tracking-tight text-[#1D1B18] dark:text-[#EDEDE8]">
+            Portal <span className="text-[#B48636] dark:text-[#E0A94E] font-medium">SETA</span>
           </span>
         </div>
         {showSubtitle && (
-          <span className="block text-[11px] font-medium tracking-tight text-slate-500 dark:text-amber-200/70">
+          <span className="block text-[11px] font-normal text-[#6E6A63] dark:text-[#9E9C96]">
             Seminário Teológico Aliança
           </span>
         )}
@@ -44,12 +44,12 @@ export function ThemeToggle({ full = false, className }) {
       variant="ghost"
       size={full ? 'sm' : 'icon'}
       onClick={toggle}
-      className={className}
+      className={cn('text-[#6E6A63] dark:text-[#9E9C96] hover:text-[#1D1B18] dark:hover:text-[#EDEDE8]', className)}
       title={dark ? 'Ativar modo claro' : 'Ativar modo escuro'}
       aria-label={dark ? 'Ativar modo claro' : 'Ativar modo escuro'}
     >
-      <Icon className="h-4 w-4" />
-      {full && <span>{dark ? 'Modo claro' : 'Modo escuro'}</span>}
+      <Icon className="h-4 w-4" strokeWidth={1.5} />
+      {full && <span className="text-xs font-normal">{dark ? 'Modo claro' : 'Modo escuro'}</span>}
     </Button>
   );
 }
