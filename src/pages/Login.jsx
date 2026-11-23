@@ -101,7 +101,7 @@ export function Login() {
                 <Input
                   type="email"
                   autoComplete="username"
-                  placeholder="ex: admin@seta.com"
+                  placeholder="Insira seu email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -113,7 +113,7 @@ export function Login() {
                   <Input
                     type={show ? 'text' : 'password'}
                     autoComplete="current-password"
-                    placeholder="••••••••"
+                    placeholder="Insira sua senha"
                     className="pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
