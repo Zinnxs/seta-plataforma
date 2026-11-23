@@ -12,6 +12,9 @@ import { ProfessorLessons } from './ProfessorLessons';
 
 export function ProfessorApp() {
   const { data, currentUser } = useStore();
+  const myDisciplines = (data.disciplines || []).filter((d) => d?.professorId === currentUser?.id);
+  const [page, setPage] = useState('inicio');
+  const [discId, setDiscId] = useState(myDisciplines[0]?.id);
 
   if (!currentUser) {
     return (
@@ -24,9 +27,6 @@ export function ProfessorApp() {
     );
   }
 
-  const myDisciplines = (data.disciplines || []).filter((d) => d?.professorId === currentUser?.id);
-  const [page, setPage] = useState('inicio');
-  const [discId, setDiscId] = useState(myDisciplines[0]?.id);
   const discipline = myDisciplines.find((d) => d?.id === discId) || myDisciplines[0] || null;
 
   const pendingReviews = data.assignments

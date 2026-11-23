@@ -58,6 +58,7 @@ import {
 export function AdminApp({ onOpenSupabaseConfig }) {
   const { 
     data, 
+    currentUser,
     setGradesClosed, 
     saveDisciplineConfig, 
     addUser, 
@@ -75,17 +76,6 @@ export function AdminApp({ onOpenSupabaseConfig }) {
     lastSyncError,
   } = useStore();
 
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] dark:bg-[#131417] p-6 text-center">
-        <div className="space-y-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#B48636] border-t-transparent mx-auto dark:border-[#E0A94E]" />
-          <p className="text-sm font-medium text-[#6E6A63] dark:text-[#9E9C96]">Carregando ambiente da Direção...</p>
-        </div>
-      </div>
-    );
-  }
-
   const [page, setPage] = useState('visao_geral');
   const [selectedDiscId, setSelectedDiscId] = useState(data.disciplines?.[0]?.id);
   const [adminTab, setAdminTab] = useState('notas'); // 'notas' | 'criterios'
@@ -99,6 +89,17 @@ export function AdminApp({ onOpenSupabaseConfig }) {
   const [newDisciplineModalOpen, setNewDisciplineModalOpen] = useState(false);
   const [editDisciplineModalOpen, setEditDisciplineModalOpen] = useState(false);
   const [disciplineToEdit, setDisciplineToEdit] = useState(null);
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] dark:bg-[#131417] p-6 text-center">
+        <div className="space-y-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#B48636] border-t-transparent mx-auto dark:border-[#E0A94E]" />
+          <p className="text-sm font-medium text-[#6E6A63] dark:text-[#9E9C96]">Carregando ambiente da Direção...</p>
+        </div>
+      </div>
+    );
+  }
 
   const selectedDiscipline = (data.disciplines || []).find(d => d.id === selectedDiscId) || data.disciplines?.[0] || null;
 
