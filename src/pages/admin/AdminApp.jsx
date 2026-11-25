@@ -25,6 +25,7 @@ import {
   Database,
   Bell,
   FileCheck,
+  Clock,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -40,6 +41,7 @@ import { NewDisciplineAdminModal } from '../../components/Modals/NewDisciplineAd
 import { EditDisciplineModal } from '../../components/Modals/EditDisciplineModal';
 import { AdminAnnouncementsView } from './AdminAnnouncementsView';
 import { AdminEnrollmentDocsView } from './AdminEnrollmentDocsView';
+import { AdminInternshipView } from './AdminInternshipView';
 import { 
   Badge, 
   Button, 
@@ -122,9 +124,13 @@ export function AdminApp({ onOpenSupabaseConfig }) {
     }
   });
 
+  // Contagem de atividades de estágio aguardando aprovação da Direção
+  const pendingInternshipsCount = (data.internships || []).filter((i) => i.status === 'em_analise').length;
+
   const nav = [
     { id: 'visao_geral', label: 'Visão geral', icon: Building2 },
     { id: 'usuarios', label: 'Alunos e Professores', icon: Users, count: data.students.length + data.professors.length },
+    { id: 'estagios', label: 'Horas de Estágio', icon: Clock, count: pendingInternshipsCount || undefined },
     { id: 'documentos', label: 'Documentos de Matrícula', icon: FileCheck, count: pendingDocsReviewCount || undefined },
     { id: 'disciplinas', label: 'Diários e matérias', icon: BookOpen, count: data.disciplines.length },
     { id: 'recuperacao', label: 'Alunos em recuperação', icon: AlertTriangle, count: totalRecoveryCount },
@@ -171,6 +177,10 @@ export function AdminApp({ onOpenSupabaseConfig }) {
 
       {page === 'documentos' && (
         <AdminEnrollmentDocsView />
+      )}
+
+      {page === 'estagios' && (
+        <AdminInternshipView />
       )}
 
       {page === 'disciplinas' && (

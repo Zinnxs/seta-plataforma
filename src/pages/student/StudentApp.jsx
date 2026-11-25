@@ -23,6 +23,7 @@ import {
 import { Layout } from '../../components/Layout';
 import { useStore } from '../../lib/store';
 import { StudentDocumentsView } from './StudentDocumentsView';
+import { StudentInternshipView } from './StudentInternshipView';
 import { computeResult, describeFormula, isNum, pointsTotal } from '../../lib/grades';
 import { fmtDate, fmtDateTime, fmtGrade, fmtSize, isPast, personName } from '../../lib/format';
 import { typeLabel } from '../../data/seed';
@@ -94,6 +95,7 @@ export function StudentApp() {
   const nav = [
     { id: 'boletim', label: 'Boletim oficial', icon: Award },
     { id: 'trabalhos', label: 'Trabalhos', icon: FileText, count: pendingAssignments.length },
+    { id: 'estagio', label: 'Horas de estágio', icon: Clock },
     { id: 'aulas', label: 'Aulas e materiais', icon: Video },
     { id: 'avisos', label: 'Mural de avisos', icon: Bell },
   ];
@@ -119,6 +121,10 @@ export function StudentApp() {
 
       {page === 'documentos' && isRequiredYear && (
         <StudentDocumentsView student={student} />
+      )}
+
+      {page === 'estagio' && (
+        <StudentInternshipView student={student} />
       )}
 
       {page === 'trabalhos' && (

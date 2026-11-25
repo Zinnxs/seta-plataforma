@@ -157,6 +157,41 @@ ALTER TABLE seta_pre_registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_enrollment_docs_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seta_student_documents ENABLE ROW LEVEL SECURITY;
 
+-- 10. Configuração Global e Metas Individuais de Estágio Supervisionado
+CREATE TABLE IF NOT EXISTS seta_internship_config (
+  id TEXT PRIMARY KEY DEFAULT 'global-internship-config',
+  default_target_hours NUMERIC NOT NULL DEFAULT 100,
+  student_targets JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 11. Registros de Horas de Estágio Supervisionado (Regra 2x: Duração Real x 2)
+CREATE TABLE IF NOT EXISTS seta_internships (
+  id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'pregacao',
+  location TEXT NOT NULL,
+  supervisor TEXT,
+  date TEXT NOT NULL,
+  real_duration_minutes NUMERIC NOT NULL DEFAULT 30,
+  requested_hours NUMERIC NOT NULL DEFAULT 1,
+  approved_hours NUMERIC,
+  status TEXT NOT NULL DEFAULT 'em_analise',
+  file_url TEXT,
+  file_name TEXT,
+  file_size NUMERIC,
+  student_notes TEXT,
+  review_notes TEXT,
+  created_by TEXT DEFAULT 'aluno',
+  reviewed_by TEXT,
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE seta_internship_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seta_internships ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS "Public access seta_users" ON seta_users;
 CREATE POLICY "Public access seta_users" ON seta_users FOR ALL TO public USING (true) WITH CHECK (true);
 
@@ -183,6 +218,12 @@ CREATE POLICY "Public access seta_enrollment_docs_config" ON seta_enrollment_doc
 
 DROP POLICY IF EXISTS "Public access seta_student_documents" ON seta_student_documents;
 CREATE POLICY "Public access seta_student_documents" ON seta_student_documents FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public access seta_internship_config" ON seta_internship_config;
+CREATE POLICY "Public access seta_internship_config" ON seta_internship_config FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public access seta_internships" ON seta_internships;
+CREATE POLICY "Public access seta_internships" ON seta_internships FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- =========================================================================
 -- BUCKET DE ARMAZENAMENTO DE ARQUIVOS (SUPABASE STORAGE)

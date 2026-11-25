@@ -41,6 +41,19 @@ export const ruleLabel = (id) => RECOVERY_RULES.find((r) => r.id === id)?.label 
 /** Curso único ofertado pelo seminário */
 export const COURSES = ['Bacharel em Teologia'];
 
+/** Categorias ministeriais oficiais de estágio supervisionado */
+export const INTERNSHIP_CATEGORIES = [
+  { id: 'pregacao', label: 'Pregação / Exposição Bíblica' },
+  { id: 'ensino', label: 'Ensino / Escola Bíblica (EBD)' },
+  { id: 'visitacao', label: 'Visitação Pastoral / Hospitalar' },
+  { id: 'evangelismo', label: 'Evangelismo & Missões' },
+  { id: 'lideranca', label: 'Liderança / Aconselhamento' },
+  { id: 'eventos', label: 'Cultos, Eventos & Apoio Ministerial' },
+];
+
+export const internshipCategoryLabel = (id) =>
+  INTERNSHIP_CATEGORIES.find((c) => c.id === id)?.label ?? 'Atividade Prática';
+
 /** Lista padrão sugerida de documentos de matrícula */
 export const DEFAULT_ENROLLMENT_DOCUMENTS = [
   {
@@ -117,6 +130,12 @@ export function createSeed() {
       documents: DEFAULT_ENROLLMENT_DOCUMENTS,
     },
     studentDocuments: {},
+    internshipConfig: {
+      id: 'global-internship-config',
+      defaultTargetHours: 100,
+      studentTargets: {},
+    },
+    internships: [],
     announcements: [
       {
         id: 'ann-init',

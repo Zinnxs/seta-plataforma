@@ -208,6 +208,56 @@ export function StoreProvider({ children }) {
           console.warn('Tabela seta_student_documents ainda não existe no Supabase.');
         }
 
+        // Carrega configuração de estágio supervisionado e registros de estágios (com fallback seguro)
+        let loadedInternshipConfig = null;
+        let loadedInternships = null;
+
+        try {
+          const { data: intCfgRow } = await supabase.from('seta_internship_config').select('*').limit(1).maybeSingle();
+          if (intCfgRow) {
+            loadedInternshipConfig = {
+              id: intCfgRow.id || 'global-internship-config',
+              defaultTargetHours: Number(intCfgRow.default_target_hours) || 100,
+              studentTargets: intCfgRow.student_targets && typeof intCfgRow.student_targets === 'object' ? intCfgRow.student_targets : {},
+            };
+          }
+        } catch (e) {
+          console.warn('Tabela seta_internship_config ainda não existe no Supabase.');
+        }
+
+        try {
+          const { data: intRows, error: intErr } = await supabase
+            .from('seta_internships')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!intErr && Array.isArray(intRows)) {
+            loadedInternships = intRows.map((row) => ({
+              id: row.id,
+              studentId: row.student_id,
+              title: row.title,
+              category: row.category || 'pregacao',
+              location: row.location,
+              supervisor: row.supervisor || '',
+              date: row.date,
+              realDurationMinutes: Number(row.real_duration_minutes) || Math.round((Number(row.requested_hours) || 1) * 30),
+              requestedHours: Number(row.requested_hours) || 0,
+              approvedHours: row.approved_hours !== null && row.approved_hours !== undefined ? Number(row.approved_hours) : null,
+              status: row.status || 'em_analise',
+              fileUrl: row.file_url || '',
+              fileName: row.file_name || '',
+              fileSize: Number(row.file_size) || 0,
+              studentNotes: row.student_notes || '',
+              reviewNotes: row.review_notes || '',
+              createdBy: row.created_by || 'aluno',
+              reviewedBy: row.reviewed_by || null,
+              reviewedAt: row.reviewed_at || null,
+              createdAt: row.created_at,
+            }));
+          }
+        } catch (e) {
+          console.warn('Tabela seta_internships ainda não existe no Supabase.');
+        }
+
         if (isMounted) {
           setData((prev) => ({
             ...prev,
@@ -225,6 +275,12 @@ export function StoreProvider({ children }) {
               documents: DEFAULT_ENROLLMENT_DOCUMENTS,
             },
             studentDocuments: Object.keys(loadedStudentDocs).length > 0 ? loadedStudentDocs : (prev.studentDocuments || {}),
+            internshipConfig: loadedInternshipConfig || prev.internshipConfig || {
+              id: 'global-internship-config',
+              defaultTargetHours: 100,
+              studentTargets: {},
+            },
+            internships: loadedInternships !== null && loadedInternships.length > 0 ? loadedInternships : (prev.internships || []),
           }));
           setSyncStatus('synced');
           setLastSyncError(null);
@@ -603,6 +659,73 @@ export function StoreProvider({ children }) {
       setSyncStatus('synced');
     } catch (e) {
       console.warn('Falha de rede ao sincronizar documento do aluno:', e);
+    }
+  };
+
+  const syncInternshipConfigToSupabase = async (config) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_internship_config').upsert(
+        {
+          id: 'global-internship-config',
+          default_target_hours: Number(config.defaultTargetHours) || 100,
+          student_targets: config.studentTargets || {},
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+      if (error) console.warn('Aviso ao sincronizar config de estágio no Supabase:', error.message);
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Falha ao sincronizar config de estágio:', e);
+    }
+  };
+
+  const syncInternshipToSupabase = async (record) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('seta_internships').upsert(
+        {
+          id: record.id,
+          student_id: record.studentId,
+          title: record.title,
+          category: record.category || 'pregacao',
+          location: record.location,
+          supervisor: record.supervisor || null,
+          date: record.date,
+          real_duration_minutes: Number(record.realDurationMinutes) || 30,
+          requested_hours: Number(record.requestedHours) || 0,
+          approved_hours: record.approvedHours !== null && record.approvedHours !== undefined ? Number(record.approvedHours) : null,
+          status: record.status || 'em_analise',
+          file_url: record.fileUrl || null,
+          file_name: record.fileName || null,
+          file_size: record.fileSize || null,
+          student_notes: record.studentNotes || null,
+          review_notes: record.reviewNotes || null,
+          created_by: record.createdBy || 'aluno',
+          reviewed_by: record.reviewedBy || null,
+          reviewed_at: record.reviewedAt || null,
+          created_at: record.createdAt || new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+      if (error) console.warn('Aviso ao sincronizar estágio no Supabase:', error.message);
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Falha ao sincronizar estágio:', e);
+    }
+  };
+
+  const deleteInternshipFromSupabase = async (internshipId) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      setSyncStatus('syncing');
+      await supabase.from('seta_internships').delete().eq('id', internshipId);
+      setSyncStatus('synced');
+    } catch (e) {
+      console.warn('Falha ao remover estágio do Supabase:', e);
     }
   };
 
@@ -1157,6 +1280,194 @@ export function StoreProvider({ children }) {
         recordToSync = updated;
       });
       if (recordToSync) syncStudentDocToSupabase(recordToSync);
+    },
+
+    /* ============================================================================
+     * MÓDULO DE HORAS DE ESTÁGIO SUPERVISIONADO (REGRA DO DOBRO DE HORAS: 2×)
+     * ============================================================================ */
+
+    /** Atualizar meta global padrão de horas de estágio */
+    updateInternshipConfig(newConfig) {
+      let cfgToSync = null;
+      update((d) => {
+        if (!d.internshipConfig) {
+          d.internshipConfig = { id: 'global-internship-config', defaultTargetHours: 100, studentTargets: {} };
+        }
+        d.internshipConfig = { ...d.internshipConfig, ...newConfig };
+        cfgToSync = { ...d.internshipConfig };
+      });
+      if (cfgToSync) syncInternshipConfigToSupabase(cfgToSync);
+    },
+
+    /** Definir ou remover meta individual de horas de estágio para um aluno */
+    setStudentInternshipTarget(studentId, targetHours) {
+      let cfgToSync = null;
+      update((d) => {
+        if (!d.internshipConfig) {
+          d.internshipConfig = { id: 'global-internship-config', defaultTargetHours: 100, studentTargets: {} };
+        }
+        if (!d.internshipConfig.studentTargets) d.internshipConfig.studentTargets = {};
+        if (targetHours === null || targetHours === '' || Number(targetHours) <= 0) {
+          delete d.internshipConfig.studentTargets[studentId];
+        } else {
+          d.internshipConfig.studentTargets[studentId] = Number(targetHours);
+        }
+        cfgToSync = { ...d.internshipConfig };
+      });
+      if (cfgToSync) syncInternshipConfigToSupabase(cfgToSync);
+    },
+
+    /** Aluno registrar/solicitar nova atividade de estágio (entra como 'em_analise') */
+    async submitStudentInternship(studentId, payload, file = null) {
+      let fileUrl = '';
+      let fileName = '';
+      let fileSize = 0;
+
+      if (file) {
+        const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+        if (file.size > MAX_SIZE) {
+          return { success: false, error: 'O arquivo excede o limite máximo permitido de 15MB.' };
+        }
+        fileName = file.name;
+        fileSize = file.size;
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filePath = `estagios/${studentId}/${Date.now()}_${cleanFileName}`;
+
+        if (isSupabaseConfigured && supabase) {
+          try {
+            const { error: uploadErr } = await supabase.storage
+              .from('seta-trabalhos')
+              .upload(filePath, file, {
+                upsert: true,
+                contentType: file.type || 'application/octet-stream',
+              });
+            if (!uploadErr) {
+              const { data: urlData } = supabase.storage.from('seta-trabalhos').getPublicUrl(filePath);
+              fileUrl = urlData.publicUrl;
+            } else {
+              fileUrl = URL.createObjectURL(file);
+            }
+          } catch {
+            fileUrl = URL.createObjectURL(file);
+          }
+        } else {
+          fileUrl = URL.createObjectURL(file);
+        }
+      }
+
+      const realMinutes = Number(payload.realDurationMinutes) || 30;
+      const countedHours = payload.requestedHours !== undefined
+        ? Number(payload.requestedHours)
+        : Math.round((realMinutes / 60) * 2 * 100) / 100;
+
+      const record = {
+        id: `int-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        studentId,
+        title: (payload.title || '').trim(),
+        category: payload.category || 'pregacao',
+        location: (payload.location || '').trim(),
+        supervisor: (payload.supervisor || '').trim(),
+        date: payload.date || new Date().toISOString().slice(0, 10),
+        realDurationMinutes: realMinutes,
+        requestedHours: countedHours,
+        approvedHours: null,
+        status: 'em_analise',
+        fileUrl,
+        fileName,
+        fileSize,
+        studentNotes: (payload.studentNotes || '').trim(),
+        reviewNotes: '',
+        createdBy: 'aluno',
+        reviewedBy: null,
+        reviewedAt: null,
+        createdAt: new Date().toISOString(),
+      };
+
+      update((d) => {
+        if (!Array.isArray(d.internships)) d.internships = [];
+        d.internships.unshift(record);
+      });
+
+      syncInternshipToSupabase(record);
+      return { success: true, record };
+    },
+
+    /** Direção lançar horas de estágio diretamente para um aluno (já entra como 'aprovado') */
+    addAdminInternship(payload) {
+      const realMinutes = Number(payload.realDurationMinutes) || 30;
+      const countedHours = payload.approvedHours !== undefined
+        ? Number(payload.approvedHours)
+        : Math.round((realMinutes / 60) * 2 * 100) / 100;
+
+      const record = {
+        id: `int-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        studentId: payload.studentId,
+        title: (payload.title || '').trim(),
+        category: payload.category || 'pregacao',
+        location: (payload.location || '').trim(),
+        supervisor: (payload.supervisor || '').trim(),
+        date: payload.date || new Date().toISOString().slice(0, 10),
+        realDurationMinutes: realMinutes,
+        requestedHours: countedHours,
+        approvedHours: countedHours,
+        status: 'aprovado',
+        fileUrl: '',
+        fileName: '',
+        fileSize: 0,
+        studentNotes: (payload.studentNotes || '').trim(),
+        reviewNotes: (payload.reviewNotes || 'Horas lançadas e homologadas pela Direção Geral (regra 2×).').trim(),
+        createdBy: 'admin',
+        reviewedBy: 'Direção Geral',
+        reviewedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+
+      update((d) => {
+        if (!Array.isArray(d.internships)) d.internships = [];
+        d.internships.unshift(record);
+      });
+
+      syncInternshipToSupabase(record);
+      return record;
+    },
+
+    /** Direção aprovar, ajustar horas, recusar ou editar um registro de estágio */
+    reviewInternship(internshipId, patch) {
+      let recordToSync = null;
+      update((d) => {
+        if (!Array.isArray(d.internships)) d.internships = [];
+        const idx = d.internships.findIndex((i) => i.id === internshipId);
+        if (idx === -1) return;
+        const curr = d.internships[idx];
+        const nextStatus = patch.status ?? curr.status;
+        const nextApprovedHours =
+          patch.approvedHours !== undefined && patch.approvedHours !== null
+            ? Number(patch.approvedHours)
+            : nextStatus === 'aprovado'
+            ? Number(curr.approvedHours ?? curr.requestedHours)
+            : curr.approvedHours;
+
+        const updated = {
+          ...curr,
+          ...patch,
+          status: nextStatus,
+          approvedHours: nextApprovedHours,
+          reviewedBy: 'Direção Geral',
+          reviewedAt: new Date().toISOString(),
+        };
+        d.internships[idx] = updated;
+        recordToSync = updated;
+      });
+      if (recordToSync) syncInternshipToSupabase(recordToSync);
+    },
+
+    /** Direção excluir um registro de estágio */
+    deleteInternship(internshipId) {
+      update((d) => {
+        if (!Array.isArray(d.internships)) return;
+        d.internships = d.internships.filter((i) => i.id !== internshipId);
+      });
+      deleteInternshipFromSupabase(internshipId);
     },
 
     saveSupabaseCredentials,
