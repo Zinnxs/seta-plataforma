@@ -30,6 +30,16 @@ import { INTERNSHIP_CATEGORIES, internshipCategoryLabel } from '../../data/seed'
 import { fmtDate } from '../../lib/format';
 import { fmtHours } from '../student/StudentInternshipView';
 
+export function formatRealDuration(realMinutes, fallbackCountedHours = 0) {
+  const mins = Number(realMinutes) > 0 ? Number(realMinutes) : Math.round((Number(fallbackCountedHours) / 2) * 60);
+  if (mins < 60) {
+    return `${mins} min`;
+  }
+  const h = Math.floor(mins / 60);
+  const rem = Math.round(mins % 60);
+  return rem > 0 ? `${h}h ${rem}min` : `${h}h`;
+}
+
 export function AdminInternshipView() {
   const {
     data,
@@ -361,6 +371,9 @@ export function AdminInternshipView() {
                       <Calendar className="h-3.5 w-3.5 text-[#9E6C1B] dark:text-[#E0A94E]" />
                       <strong className="text-[#1D1B18] dark:text-[#EDEDE8]">Data:</strong> {fmtDate(item.date)}
                     </span>
+                    <span className="font-mono text-[11px] text-[#9E6C1B] dark:text-[#E0A94E]">
+                      Duração real: {formatRealDuration(item.realDurationMinutes, hours)} → Contabilizado (2×): {fmtHours(hours)}
+                    </span>
                   </div>
 
                   {item.reviewNotes && (
@@ -407,21 +420,33 @@ export function AdminInternshipView() {
 
 function AdminInternshipFormModal({ students, initialStudentId, existingItem, onClose, onSave }) {
   const isEditing = Boolean(existingItem);
+
+  // Se estiver editando, recupera a duração real salva (em minutos ou horas)
+  const initialRealMins = existingItem
+    ? Number(existingItem.realDurationMinutes) ||
+      Math.round((Number(existingItem.approvedHours ?? existingItem.requestedHours ?? 1) / 2) * 60)
+    : 30;
+  const initialUnit = initialRealMins >= 60 && initialRealMins % 60 === 0 ? 'h' : 'min';
+  const initialDurationVal =
+    initialUnit === 'h' ? String(initialRealMins / 60) : String(initialRealMins);
+
   const [studentId, setStudentId] = useState(
     existingItem?.studentId || initialStudentId || students[0]?.id || ''
   );
   const [title, setTitle] = useState(existingItem?.title || '');
   const [category, setCategory] = useState(existingItem?.category || 'pregacao');
-  const [hours, setHours] = useState(
-    existingItem ? String(existingItem.approvedHours ?? existingItem.requestedHours ?? 1) : ''
-  );
+  const [durationVal, setDurationVal] = useState(isEditing ? initialDurationVal : '30');
+  const [durationUnit, setDurationUnit] = useState(isEditing ? initialUnit : 'min'); // 'min' | 'h'
   const [location, setLocation] = useState(existingItem?.location || '');
   const [supervisor, setSupervisor] = useState(existingItem?.supervisor || '');
   const [date, setDate] = useState(existingItem?.date || new Date().toISOString().slice(0, 10));
   const [reviewNotes, setReviewNotes] = useState(existingItem?.reviewNotes || '');
 
-  const parsedHours = Number(hours) || 0;
-  const valid = studentId && title.trim() && location.trim() && date && parsedHours > 0;
+  const rawNum = Number(durationVal) || 0;
+  const realDurationMinutes = durationUnit === 'min' ? Math.round(rawNum) : Math.round(rawNum * 60);
+  const countedHours = Math.round((realDurationMinutes / 60) * 2 * 100) / 100;
+
+  const valid = studentId && title.trim() && location.trim() && date && realDurationMinutes > 0;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -433,9 +458,9 @@ function AdminInternshipFormModal({ students, initialStudentId, existingItem, on
       location: location.trim(),
       supervisor: supervisor.trim(),
       date,
-      realDurationMinutes: Math.round((parsedHours / 2) * 60),
-      requestedHours: parsedHours,
-      approvedHours: parsedHours,
+      realDurationMinutes,
+      requestedHours: countedHours,
+      approvedHours: countedHours,
       reviewNotes: reviewNotes.trim(),
     });
   };
@@ -445,14 +470,14 @@ function AdminInternshipFormModal({ students, initialStudentId, existingItem, on
       open
       onClose={onClose}
       title={isEditing ? 'Editar Registro de Estágio' : 'Lançar Horas de Estágio'}
-      description="Informe os dados do documento de estágio assinado entregue pelo aluno para atualizar o saldo de horas."
+      description="Informe a duração real em minutos ou horas. O sistema multiplica automaticamente por 2 (regra do dobro de horas do SETA)."
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
           <Button disabled={!valid} onClick={handleSubmit}>
-            {isEditing ? 'Salvar Alterações' : 'Lançar Horas'}
+            {isEditing ? `Salvar (${fmtHours(countedHours)})` : `Lançar ${fmtHours(countedHours)} (2×)`}
           </Button>
         </>
       }
@@ -471,16 +496,16 @@ function AdminInternshipFormModal({ students, initialStudentId, existingItem, on
           </Field>
         )}
 
-        <Field label="Título / Descrição da Atividade *">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex.: Pregação no Culto Dominical ou Aula na EBD"
-            required
-          />
-        </Field>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Título / Descrição da Atividade *">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex.: Pregação no Culto ou Aula na EBD"
+              required
+            />
+          </Field>
+
           <Field label="Categoria Ministerial *">
             <Select value={category} onChange={(e) => setCategory(e.target.value)}>
               {INTERNSHIP_CATEGORIES.map((c) => (
@@ -490,18 +515,33 @@ function AdminInternshipFormModal({ students, initialStudentId, existingItem, on
               ))}
             </Select>
           </Field>
+        </div>
 
-          <Field label="Horas de Estágio a Lançar *">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field
+            label="Duração Real da Atividade *"
+            hint={`Contabilizado no estágio (2×): ${fmtHours(countedHours)}`}
+          >
             <Input
               type="number"
-              min="0.5"
-              max="500"
+              min="1"
+              max="600"
               step="0.5"
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              placeholder="Ex.: 1, 2, 10..."
+              value={durationVal}
+              onChange={(e) => setDurationVal(e.target.value)}
+              placeholder="Ex.: 30"
               required
             />
+          </Field>
+
+          <Field
+            label="Unidade de Tempo *"
+            hint={`Tempo real: ${formatRealDuration(realDurationMinutes)} × 2 = ${fmtHours(countedHours)}`}
+          >
+            <Select value={durationUnit} onChange={(e) => setDurationUnit(e.target.value)}>
+              <option value="min">Minutos (ex: 30 min = 1h)</option>
+              <option value="h">Horas (ex: 1h = 2h)</option>
+            </Select>
           </Field>
         </div>
 

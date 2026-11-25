@@ -22,6 +22,16 @@ export function fmtHours(num) {
   return `${String(n).replace('.', ',')}h`;
 }
 
+export function formatRealDuration(realMinutes, fallbackCountedHours = 0) {
+  const mins = Number(realMinutes) > 0 ? Number(realMinutes) : Math.round((Number(fallbackCountedHours) / 2) * 60);
+  if (mins < 60) {
+    return `${mins} min`;
+  }
+  const h = Math.floor(mins / 60);
+  const rem = Math.round(mins % 60);
+  return rem > 0 ? `${h}h ${rem}min` : `${h}h`;
+}
+
 export function StudentInternshipView({ student }) {
   const { data } = useStore();
 
@@ -207,7 +217,10 @@ export function StudentInternshipView({ student }) {
                         {fmtHours(hours)}
                       </div>
                       <span className="block text-[10px] text-[#6E6A63] dark:text-[#9E9C96]">
-                        Horas Lançadas
+                        Contabilizadas (2×)
+                      </span>
+                      <span className="block font-mono text-[10px] text-[#9E6C1B] dark:text-[#E0A94E] mt-0.5">
+                        Real: {formatRealDuration(item.realDurationMinutes, hours)}
                       </span>
                     </div>
                   </div>
